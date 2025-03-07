@@ -1,3 +1,4 @@
+import { Link } from "expo-router";
 import React from "react";
 import {
   View,
@@ -44,7 +45,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
         >
           <Text style={styles.menuItem}>Search</Text>
           <Text style={styles.menuItem}>Favorites</Text>
-          <Text style={styles.menuItem}>Map</Text>
+          <Link href="/map" style={styles.menuItem}>Map</Link>
           <Text style={styles.menuItem}>Account</Text>
           <Text style={styles.menuItem}>Settings</Text>
         </Animated.View>

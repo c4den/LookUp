@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const IndexPage: React.FC = () => {
+const MapPage: React.FC = () => {
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Index Page</Text>
+            <Text style={styles.title}>Map Page</Text>
         </View>
     );
 };
@@ -22,4 +22,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default IndexPage;
+export default MapPage;
