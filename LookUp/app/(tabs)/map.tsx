@@ -7,6 +7,10 @@ const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useBouncingBox } from '@/hooks/useBouncingBox'; // bouncing red box for overlays
+import { Switch } from 'react-native-gesture-handler';
+
+// For plane tracking switch
+import PlaneTrackingToggle from '@/components/PlaneTrackingToggle';
 
 export default function MapScreen() {
   // Default to false for mixed reality mode initially for load on phones
@@ -26,6 +30,11 @@ export default function MapScreen() {
 
   // Get the screen width
   const [placement, setPlacement] = useState<'left' | 'right'>('right');
+
+  // Variables for switch between satellite tracking and plane tracking
+  const [isTrackingPlanes, setIsTrackingPlanes] = useState(true);
+  const toggleTrackingPlanes = () => setIsTrackingPlanes(!isTrackingPlanes);
+  const planeSwitchScale = 1.8; // Change this value to scale the switch
 
   // Tooltip Init
   const tooltipOffset = useRef(new Animated.Value(250)).current; // default on the right side
@@ -155,6 +164,23 @@ export default function MapScreen() {
   // ========================= CAMERA DISPLAY & CONTROL =========================
   return (
     <View style={styles.container}>
+
+      {/* Plane Tracking Toggle Switch */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 50,
+          left: 50,
+          zIndex: 201,
+          transform: [{ scale: planeSwitchScale }],
+        }}
+      >
+        <PlaneTrackingToggle
+          value={isTrackingPlanes}
+          onToggle={() => toggleTrackingPlanes()}
+        />
+      </View>
+      {/* End plane tracking toggle switch */}
       
       {/* We check if mixed reality is enabled and permission is ranted, if so - allow for MxR Access. */}
       {isMixedReality ? (
