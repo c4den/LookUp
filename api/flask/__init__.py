@@ -48,17 +48,14 @@ def detect_and_annotate():
     confidence = float(request.form.get('confidence', 0.5))
     iou = float(request.form.get('iou', 0.3))
 
-    # Save image temporarily
     temp_path = "/tmp/uploaded.png"
     image_file.save(temp_path)
 
-    # Use Roboflow SDK to get predictions
     result = CLIENT.infer(temp_path, model_id=MODEL_ID)
     predictions = result.get('predictions', [])
     predictions = [p for p in predictions if p['confidence'] >= confidence]
     predictions = non_max_suppression(predictions, iou)
 
-    # Open and draw on image
     image = Image.open(temp_path).convert("RGB")
     draw = ImageDraw.Draw(image)
 
@@ -71,15 +68,47 @@ def detect_and_annotate():
         draw.rectangle([x0, y0, x1, y1], outline="magenta", width=3)
         draw.text((x0, y0 - 10), label, fill="magenta")
 
-    # Return image
     buf = io.BytesIO()
     image.save(buf, format="JPEG")
     buf.seek(0)
 
-    # Clean up
     os.remove(temp_path)
 
     return send_file(buf, mimetype='image/jpeg')
+
+@app.route('/bounding-box-corners', methods=['POST'])
+def bounding_box_corners():
+    image_file = request.files['image']
+    confidence = float(request.form.get('confidence', 0.5))
+    iou = float(request.form.get('iou', 0.3))
+
+    temp_path = "/tmp/uploaded.png"
+    image_file.save(temp_path)
+
+    result = CLIENT.infer(temp_path, model_id=MODEL_ID)
+    predictions = result.get('predictions', [])
+    predictions = [p for p in predictions if p['confidence'] >= confidence]
+    predictions = non_max_suppression(predictions, iou)
+
+    os.remove(temp_path)
+
+    corner_data = []
+    for pred in predictions:
+        x0 = pred['x'] - pred['width'] / 2
+        y0 = pred['y'] - pred['height'] / 2
+        x1 = pred['x'] + pred['width'] / 2
+        y1 = pred['y'] + pred['height'] / 2
+        corners = {
+            "class": pred["class"],
+            "confidence": pred["confidence"],
+            "top_left": [x0, y0],
+            "top_right": [x1, y0],
+            "bottom_left": [x0, y1],
+            "bottom_right": [x1, y1]
+        }
+        corner_data.append(corners)
+
+    return jsonify(corner_data)
 
 if __name__ == '__main__':
     app.run(port=5001)
