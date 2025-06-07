@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, Animated, Dimensions, Easing } from 'react-native';
 import { BlurView } from 'expo-blur';
 
+// flight data API key
+const FLIGHTDATAAPIKEY = process.env.FLIGHT_DATA_API_KEY;
+
 // Get the screen width and height
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -16,6 +19,13 @@ import { ThemedText } from '@/components/ThemedText';
 // for mixed reality vs map switch
 import MixedRealityToggle from '@/components/MixedRealityToggle';
 
+// Main map screen
+import MapView, { Marker, AnimatedRegion } from 'react-native-maps';
+import * as Location from 'expo-location';
+
+// for getting the flight radius from context
+import { useFlightRadius } from '@/context/FlightRadiusContext';
+
 export default function MapScreen() {
 
   // Default to false for mixed reality mode initially for load on phones
@@ -26,6 +36,131 @@ export default function MapScreen() {
   // Uses the built-in permission hook from expo-camera for camera usage
   const [permission, requestPermission] = useCameraPermissions();
 
+  // permission hook for location
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // user Latitude and longitude
+  const userLatitude = location?.coords.latitude ?? null;
+  const userLongitude = location?.coords.longitude ?? null;
+
+  // user defined flight range from context
+  const { flightRadius } = useFlightRadius();
+
+  // Bounding points for near flights query
+  let boundingPoints: { north: [number, number]; east: [number, number]; south: [number, number]; west: [number, number] } | null = null;
+
+  // Get the user's current location if they allow permission
+  // this is from Expo documentation.
+  // ============================= LOCATION PERMISSION =============================
+  useEffect(() => {
+    async function getCurrentLocation() {
+      
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+    }
+
+    getCurrentLocation();
+  }, []);
+  // ============================= END LOCATION PERMISSION =============================
+
+  // ============================= HAVERSINE FORMULA TO CALCULATE DISTANCE BASED ON USER LOCATION =============================
+
+  /**
+   * Returns four points (N, E, S, W) that are `distanceKm` away from the given lat/lon.
+   * Uses the haversine formula for destination point.
+   */
+  function getBoundingPoints(
+    latitude: number,
+    longitude: number,
+    distanceKm: number
+  ): { north: [number, number]; east: [number, number]; south: [number, number]; west: [number, number] } {
+    const R = 6371; // Earth's radius in km
+
+    function toRad(deg: number) {
+      return (deg * Math.PI) / 180;
+    }
+    function toDeg(rad: number) {
+      return (rad * 180) / Math.PI;
+    }
+
+    function destinationPoint(lat: number, lon: number, brngDeg: number, distKm: number): [number, number] {
+      const brng = toRad(brngDeg);
+      const lat1 = toRad(lat);
+      const lon1 = toRad(lon);
+
+      const lat2 = Math.asin(
+        Math.sin(lat1) * Math.cos(distKm / R) +
+          Math.cos(lat1) * Math.sin(distKm / R) * Math.cos(brng)
+      );
+      const lon2 =
+        lon1 +
+        Math.atan2(
+          Math.sin(brng) * Math.sin(distKm / R) * Math.cos(lat1),
+          Math.cos(distKm / R) - Math.sin(lat1) * Math.sin(lat2)
+        );
+      return [toDeg(lat2), toDeg(lon2)];
+    }
+
+    return {
+      north: destinationPoint(latitude, longitude, 0, distanceKm),
+      east: destinationPoint(latitude, longitude, 90, distanceKm),
+      south: destinationPoint(latitude, longitude, 180, distanceKm),
+      west: destinationPoint(latitude, longitude, 270, distanceKm),
+    };
+  }
+
+  // Get the user's bounding points if we have their location. !!ON BOOT!!
+  
+  if (userLatitude !== null && userLongitude !== null) {
+    boundingPoints = getBoundingPoints(userLatitude, userLongitude, flightRadius);
+    
+    // boundingPoints.north, .east, .south, .west are now available
+    const northPoint = [
+      boundingPoints.north[0].toFixed(3),
+      boundingPoints.north[1].toFixed(3)
+    ];
+    const southPoint = [
+      boundingPoints.south[0].toFixed(3),
+      boundingPoints.south[1].toFixed(3)
+    ];
+    const westPoint = [
+      boundingPoints.west[0].toFixed(3),
+      boundingPoints.west[1].toFixed(3)
+    ];
+    const eastPoint = [
+      boundingPoints.east[0].toFixed(3),
+      boundingPoints.east[1].toFixed(3)
+    ];
+
+    // API call to get flights within the bounding points.
+    fetch(
+      `https://fr24api.flightradar24.com/api/live/flight-positions/full?bounds=${northPoint[0]},${southPoint[0]},${westPoint[1]},${eastPoint[1]}`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Version': 'v1',
+          'Authorization': `Bearer 019653fd-4687-73b7-8676-2813ddad5873|UnUs6oib9b7bnbjHToIHmSovQJ8CaEujhVsFYzKS4805cff7`,
+        },
+      }
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(JSON.stringify(data));
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
+  // ============================= END HAVERSINE FORMULA TO CALCULATE DISTANCE BASED ON USER LOCATION =============================
   // Set the default camera facing to back
   const [facing, setFacing] = useState<CameraType>('back');
   const captureInterval = 2000; // Interval for capturing images in milliseconds (2 seconds by default)
@@ -238,9 +373,23 @@ export default function MapScreen() {
         )
         // furthermore, if we're on the map screen, just show the map.
       ) : (
-        <View style={styles.mapContainer}>
-          <Text style={styles.placeholderText}>Map Placeholder</Text>
-        </View>
+          
+          <MapView style={styles.mapContainer}
+            initialRegion={{
+              latitude: userLatitude ?? 420.00,
+              longitude: userLongitude ?? 69.00,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          >
+            {/* Place marker at user's location if they have a latitude and longitude. */}
+            {userLatitude && userLongitude && (
+              <Marker
+                coordinate={{ latitude: userLatitude, longitude: userLongitude }}
+                title="Current Location"
+              />
+            )}
+          </MapView>
       )}
       {/* Button to toggle between modes */}
       <View style={{

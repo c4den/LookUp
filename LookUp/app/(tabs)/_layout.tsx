@@ -6,15 +6,18 @@ import { Colors } from '@/constants/Colors';
 import { LoginModalProvider } from '@/context/LoginModalContext';
 import LoginModal from '@/components/LoginModal';
 import { ThemeProvider, useAppTheme } from '@/theme/ThemeContext';
+import { FlightRadiusProvider } from '@/context/FlightRadiusContext';
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <LoginModalProvider>
-        <MainLayout />
-        <LoginModal />
-      </LoginModalProvider>
-    </ThemeProvider>
+    <FlightRadiusProvider>
+      <ThemeProvider>
+        <LoginModalProvider>
+          <MainLayout />
+          <LoginModal />
+        </LoginModalProvider>
+      </ThemeProvider>
+    </FlightRadiusProvider>
   );
 }
 
