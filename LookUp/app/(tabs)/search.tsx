@@ -121,3 +121,106 @@ const styles = StyleSheet.create({
 });
 
 export default SearchMenu;
+
+// ================================== ROUTES SEARCH ==================================
+// Temp source and destination airports, replace with user input
+// const source = 'MCO';
+// const destination = 'JFK';
+
+// fetch(
+//   `https://fr24api.flightradar24.com/api/live/flight-positions/full?routes=${source}-${destination}`,
+//   {
+//     method: 'GET',
+//     headers: {
+//       'Accept': 'application/json',
+//       'Accept-Version': 'v1',
+//       'Authorization': `Bearer 019653fd-4687-73b7-8676-2813ddad5873|UnUs6oib9b7bnbjHToIHmSovQJ8CaEujhVsFYzKS4805cff7`,
+//     },
+//   }
+// )
+//   .then((response) => response.json())
+//   .then((data) => {
+//     console.log(JSON.stringify(data));
+//   })
+//   .catch((error) => {
+//     console.log(error);
+//   });
+// ================================== END ROUTES SEARCH ==================================
+
+
+// // ================================== FLIGHT NUMBER SEARCH ==================================
+// // Temp flight number, replace with user input
+// const flightNum = 'UA1742';
+
+// fetch(
+//   `https://fr24api.flightradar24.com/api/live/flight-positions/full?flights=${flightNum}`,
+//   {
+//     method: 'GET',
+//     headers: {
+//       'Accept': 'application/json',
+//       'Accept-Version': 'v1',
+//       'Authorization': `Bearer 019653fd-4687-73b7-8676-2813ddad5873|UnUs6oib9b7bnbjHToIHmSovQJ8CaEujhVsFYzKS4805cff7`,
+//     },
+//   }
+// )
+//   .then((response) => response.json())
+//   .then((data) => {
+//     console.log(JSON.stringify(data));
+//   })
+//   .catch((error) => {
+//     console.log(error);
+//   });
+// // ================================== END FLIGHT NUMBER SEARCH ==================================
+
+
+// // ================================== FLIGHT CALLSIGN SEARCH ==================================
+// // Temp flight number, replace with user input
+// const callsign = 'UAL1742';
+
+// fetch(
+//   `https://fr24api.flightradar24.com/api/live/flight-positions/full?callsigns=${callsign}`,
+//   {
+//     method: 'GET',
+//     headers: {
+//       'Accept': 'application/json',
+//       'Accept-Version': 'v1',
+//       'Authorization': `Bearer 019653fd-4687-73b7-8676-2813ddad5873|UnUs6oib9b7bnbjHToIHmSovQJ8CaEujhVsFYzKS4805cff7`,
+//     },
+//   }
+// )
+//   .then((response) => response.json())
+//   .then((data) => {
+//     console.log(JSON.stringify(data));
+//   })
+//   .catch((error) => {
+//     console.log(error);
+//   });
+// // ================================== END FLIGHT CALLSIGN SEARCH ==================================
+
+
+// ================================== AIRPORT SEARCH ==================================
+// // Temp direction. Can be 'inbound', 'outbound', or 'both'
+// const direction = 'both';
+// // Temp airport, replace with user input
+// const airport = 'MCO';
+
+// fetch(
+//   `https://fr24api.flightradar24.com/api/live/flight-positions/full?airports=${direction}:${airport}`,
+//   {
+//     method: 'GET',
+//     headers: {
+//       'Accept': 'application/json',
+//       'Accept-Version': 'v1',
+//       'Authorization': `Bearer 019653fd-4687-73b7-8676-2813ddad5873|UnUs6oib9b7bnbjHToIHmSovQJ8CaEujhVsFYzKS4805cff7`,
+//     },
+//   }
+// )
+//   .then((response) => response.json())
+//   .then((data) => {
+//     console.log(JSON.stringify(data));
+//   })
+//   .catch((error) => {
+//     console.log(error);
+//   });
+// ================================== END AIRPORT SEARCH ==================================
+
