@@ -8,7 +8,9 @@ import {
   FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router"; // Import useRouter for navigation
+import { useRouter, useLocalSearchParams } from "expo-router"; // Import useRouter for navigation
+import { useState, useEffect } from "react";
+
 
 interface SearchMenuProps {
   closeSearch: () => void;
@@ -16,8 +18,17 @@ interface SearchMenuProps {
 
 const SearchMenu: React.FC<SearchMenuProps> = ({ closeSearch }) => {
   const router = useRouter(); // Initialize router for navigation
-
   const flights = Array(8).fill("#1111 JP → NY 02/12");
+
+  const { flightNumber } = useLocalSearchParams();
+
+  // Default to use the state for the input if the flightNumber is defined
+  const [searchValue, setSearchValue] = useState(flightNumber ?? "");  
+
+  // if the parameter changes (navigating to this screen), update the input
+  useEffect(() => {
+    if (flightNumber) setSearchValue(flightNumber as string);
+  }, [flightNumber]);
 
   return (
     <View style={styles.container}>
@@ -27,6 +38,8 @@ const SearchMenu: React.FC<SearchMenuProps> = ({ closeSearch }) => {
           style={styles.input}
           placeholder="Search Flight #"
           placeholderTextColor="#ccc"
+          value={searchValue as any}
+          onChangeText={setSearchValue}
         />
       </View>
 

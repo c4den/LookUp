@@ -41,8 +41,19 @@ import { Ionicons } from "@expo/vector-icons";
 
 // for getting the compass heading from the compass heading component
 import CompassHeading from "@/components/CompassHeading";
-
 import { useCompassHeading } from "@/hooks/useCompassHeading";
+
+// to make sure the camera isn't firing when it shouldn't be 
+import { useIsFocused } from "@react-navigation/native";
+
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "../types"; 
+import { TouchableOpacity } from "react-native";
+
+// expo implementation of above:
+import { useRouter } from "expo-router";
+
 
 export default function MapScreen() {
   const { rawHeading, pitch, startCompass, stopCompass } = useCompassHeading();
@@ -70,6 +81,16 @@ export default function MapScreen() {
   const { flightRadius } = useFlightRadius();
 
   const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 });
+
+  // determine if the screen is currently focused
+  const isFocused = useIsFocused();
+
+  // For the sake of placing text in another screen.
+  type NavigationProp = StackNavigationProp<RootStackParamList, "search">;
+  const navigation = useNavigation<NavigationProp>();
+
+  // expo implementation
+  const router = useRouter();
 
   // Bounding points for near flights query
   let boundingPoints: {
@@ -107,6 +128,8 @@ export default function MapScreen() {
 
   const [flights, setFlights] = useState<Flight[]>([]);
   const [flightInView, setFlightInView] = useState<Flight | null>(null);
+
+
 
   // ============================= GET USER'S BEARING =============================
   function getBearing(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -365,7 +388,7 @@ export default function MapScreen() {
   // ================================== UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ============
 
   useEffect(() => {
-    console.log("Raw Heading:", rawHeading);
+    // console.log("Raw Heading:", rawHeading);
     if (userHeading !== null && userLatitude && userLongitude && isMixedReality) {
       const newFlight = getFlightInView(
         userLatitude,
@@ -375,8 +398,8 @@ export default function MapScreen() {
         10
       );
       setFlightInView(newFlight);
-      console.log("User Heading:", userHeading);
-      console.log("Updated flightInView:", newFlight?.callsign ?? "None");
+      // console.log("User Heading:", userHeading);
+      // console.log("Updated flightInView:", newFlight?.callsign ?? "None");
     }
   }, [userHeading, userLatitude, userLongitude, flights]);
 
@@ -518,17 +541,13 @@ export default function MapScreen() {
       // we care that the user has granted permission to use of the camera, and that we're in mixed reality mode
       if (
         isMixedReality &&
+        isFocused &&
         permission?.status === "granted" &&
         cameraRef.current
       ) {
         try {
           // capture an image from the camera, if able to and send to API
           const photo = await cameraRef.current.takePictureAsync();
-
-          // console.log("DEBUG: photo.width =", photo.width);
-          // console.log("DEBUG: photo.height =", photo.height);
-          // console.log("DEBUG: screenWidth =", screenWidth);
-          // console.log("DEBUG: screenHeight =", screenHeight);
 
           // Log photo captured with the photo's uri or a default name
           // console.log('photo captured', photo.uri || 'unnamed_photo'); // DEBUG PHOTO CAPTURE LOG
@@ -547,7 +566,7 @@ export default function MapScreen() {
       }
     }, captureInterval);
     return () => clearInterval(interval);
-  }, [isMixedReality, permission, cameraRef, captureInterval]);
+  }, [isMixedReality, isFocused, permission, cameraRef, captureInterval]);
   // ========================= END CAMERA CAPTURE LOGIC ========================================================
 
   // ========================= CAMERA DISPLAY & CONTROL ========================================================
@@ -589,7 +608,10 @@ export default function MapScreen() {
             </View>
 
             {flightInView && (
-              <View
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({pathname: "/search", params: { flightNumber: flightInView.flight ?? "" } })
+                }
                 style={{
                   position: "absolute",
                   top: 120,
@@ -614,7 +636,7 @@ export default function MapScreen() {
                 <Text style={{ color: "#ccc", fontSize: 14 }}>
                   Destination: {flightInView.dest_iata ?? "N/A"}
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
 
             <CameraView
