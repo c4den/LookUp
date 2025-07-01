@@ -371,7 +371,7 @@ module.exports.setApp = function (app, client) {
       const user = await db.collection("users").findOne({ verifyToken: token })
 
       if (!user) {
-        return res.status(400).sendres.send(`
+        return res.status(400).send(`
             <!DOCTYPE html>
             <html>
               <head>
