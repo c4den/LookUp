@@ -184,7 +184,6 @@ module.exports.setApp = function (app, client) {
 
       const msg = {
         to: email,
-        from: process.env.SEND_GRID_FROM,
         subject: "Verify your email",
         html: `
                   <h3>Welcome to the app!</h3>
@@ -314,7 +313,6 @@ module.exports.setApp = function (app, client) {
 
       const msg = {
         to: user.email,
-        from: process.env.SEND_GRID_FROM,
         subject: "Resend Email Verification",
         html: `
                     <h3>Verify your email</h3>
@@ -365,7 +363,6 @@ module.exports.setApp = function (app, client) {
 
       const msg = {
         to: email,
-        from: process.env.SEND_GRID_FROM,
         subject: "Your Password Reset Code",
         html: `
                     <h3>Reset Your Password</h3>
