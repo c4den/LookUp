@@ -185,12 +185,22 @@ module.exports.setApp = function (app, client) {
       const msg = {
         to: email,
         from: process.env.SEND_GRID_FROM,
-        subject: "Verify your email",
+        subject: "Verify Your Email",
         html: `
-                  <h3>Welcome to the app!</h3>
-                  <p><a href="${verifyLink}">Click here</a> to verify your email.</p>
-                  <p>Or use this 6-digit code in the mobile app: <strong>${verificationCode}</strong></p>
-                `,
+          <div style="background-color:#0b1e3d; padding:40px 20px; font-family:Arial, sans-serif; color:#ffffff; text-align:center;">
+            <div style="max-width:500px; margin:0 auto; background-color:#ffffff; color:#000; border-radius:8px; padding:30px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+              <h2 style="color:#0b1e3d; margin-bottom:20px;">Welcome to the App!</h2>
+              <p style="font-size:16px; margin-bottom:25px;">Please verify your email to complete your registration.</p>
+              <a href="${verifyLink}" 
+                 style="display:inline-block; background-color:#0b1e3d; color:#fff; text-decoration:none; padding:12px 24px; border-radius:5px; font-weight:bold;">
+                Verify Email
+              </a>
+              <p style="margin-top:30px; font-size:14px; color:#444;">Or use this 6-digit code in the mobile app:</p>
+              <div style="font-size:24px; font-weight:bold; margin:10px 0;">${verificationCode}</div>
+              <p style="font-size:13px; color:#777;">This code expires soon, so be sure to use it right away.</p>
+            </div>
+          </div>
+        `,
       }
 
       sgMail
@@ -268,7 +278,65 @@ module.exports.setApp = function (app, client) {
         }
       )
 
-      res.send("Email verified successfully!")
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Password Reset Success</title>
+            <style>
+              body {
+                background-color: #0b1e3d;
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+              }
+
+              .message-box {
+                background-color: #ffffff;
+                padding: 2rem 3rem;
+                border-radius: 10px;
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+                text-align: center;
+                max-width: 400px;
+              }
+
+              h2 {
+                color: #0b1e3d;
+                margin-bottom: 1rem;
+              }
+
+              p {
+                font-size: 1rem;
+                color: #333;
+              }
+
+              a {
+                display: inline-block;
+                margin-top: 1.5rem;
+                text-decoration: none;
+                background-color: #0b1e3d;
+                color: #fff;
+                padding: 0.6rem 1.2rem;
+                border-radius: 5px;
+                transition: background-color 0.3s ease;
+              }
+
+              a:hover {
+                background-color: #133c74;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="message-box">
+              <h2>Success!</h2>
+              <p>Email verified successfully.</p>
+            </div>
+          </body>
+        </html>
+      `)
     } catch (e) {
       console.error(e)
       res.status(500).send({
@@ -315,13 +383,24 @@ module.exports.setApp = function (app, client) {
       const msg = {
         to: user.email,
         from: process.env.SEND_GRID_FROM,
-        subject: "Resend Email Verification",
+        subject: "Verify Your Email",
         html: `
-                    <h3>Verify your email</h3>
-                    <p><a href="${verifyLink}">Click here</a> to verify your email.</p>
-                    <p>Or use this 6-digit code in the mobile app: <strong>${newCode}</strong></p>
-                `,
+          <div style="background-color:#0b1e3d; padding:40px 20px; font-family:Arial, sans-serif; color:#ffffff; text-align:center;">
+            <div style="max-width:500px; margin:0 auto; background-color:#ffffff; color:#000; border-radius:8px; padding:30px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+              <h2 style="color:#0b1e3d; margin-bottom:20px;">Verify Your Email</h2>
+              <p style="font-size:16px; margin-bottom:25px;">You're almost there! Just verify your email to complete setup.</p>
+              <a href="${verifyLink}" 
+                 style="display:inline-block; background-color:#0b1e3d; color:#fff; text-decoration:none; padding:12px 24px; border-radius:5px; font-weight:bold;">
+                Click to Verify
+              </a>
+              <p style="margin-top:30px; font-size:14px; color:#444;">Or use this 6-digit code in the mobile app:</p>
+              <div style="font-size:24px; font-weight:bold; margin:10px 0;">${newCode}</div>
+              <p style="font-size:13px; color:#777;">This code will expire shortly for your security.</p>
+            </div>
+          </div>
+        `,
       }
+
       sgMail
         .send(msg)
         .then(() => {
@@ -381,13 +460,24 @@ module.exports.setApp = function (app, client) {
       const msg = {
         to: email,
         from: process.env.SEND_GRID_FROM,
-        subject: "Your Password Reset Code",
+        subject: "Reset Your Password",
         html: `
-                    <h3>Reset Your Password</h3>
-                    <p>Use the following code or <a href="${resetLink}">click here</a> to reset your password in the mobile app:</p>
-                    <h2>${resetCode}</h2>
-                    <p>This code expires in 10 minutes.</p>
-                `,
+          <div style="background-color:#0b1e3d; padding:40px 20px; font-family:Arial, sans-serif; color:#ffffff; text-align:center;">
+            <div style="max-width:500px; margin:0 auto; background-color:#ffffff; color:#000; border-radius:8px; padding:30px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+              <h2 style="color:#0b1e3d; margin-bottom:20px;">Reset Your Password</h2>
+              <p style="font-size:16px; margin-bottom:25px;">
+                Use the code below or click the button to reset your password.
+              </p>
+              <a href="${resetLink}" 
+                 style="display:inline-block; background-color:#0b1e3d; color:#fff; text-decoration:none; padding:12px 24px; border-radius:5px; font-weight:bold;">
+                Reset Password
+              </a>
+              <p style="margin-top:30px; font-size:14px; color:#444;">Your 6-digit reset code:</p>
+              <div style="font-size:24px; font-weight:bold; margin:10px 0;">${resetCode}</div>
+              <p style="font-size:13px; color:#777;">This code expires in 10 minutes for your security.</p>
+            </div>
+          </div>
+        `,
       }
 
       sgMail
@@ -699,7 +789,65 @@ module.exports.setApp = function (app, client) {
         }
       )
 
-      res.send("Password has been reset successfully.")
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Password Reset Success</title>
+            <style>
+              body {
+                background-color: #0b1e3d;
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+              }
+
+              .message-box {
+                background-color: #ffffff;
+                padding: 2rem 3rem;
+                border-radius: 10px;
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+                text-align: center;
+                max-width: 400px;
+              }
+
+              h2 {
+                color: #0b1e3d;
+                margin-bottom: 1rem;
+              }
+
+              p {
+                font-size: 1rem;
+                color: #333;
+              }
+
+              a {
+                display: inline-block;
+                margin-top: 1.5rem;
+                text-decoration: none;
+                background-color: #0b1e3d;
+                color: #fff;
+                padding: 0.6rem 1.2rem;
+                border-radius: 5px;
+                transition: background-color 0.3s ease;
+              }
+
+              a:hover {
+                background-color: #133c74;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="message-box">
+              <h2>Success!</h2>
+              <p>Your password has been reset successfully.</p>
+            </div>
+          </body>
+        </html>
+      `)
     } catch (e) {
       console.error(e)
       res.status(500).send("Server error resetting password.")
