@@ -21,6 +21,110 @@ function generateToken() {
   return crypto.randomBytes(16).toString("hex")
 }
 
+function renderResendForm(message = "", color = "", prefillLogin = "") {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Resend Verification</title>
+        <style>
+          body {
+            background-color: #0b1e3d;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+          }
+
+          .container {
+            background-color: #ffffff;
+            padding: 2rem 3rem;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+          }
+
+          h2 {
+            color: #0b1e3d;
+            margin-bottom: 1.5rem;
+          }
+
+          input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+          }
+
+          button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #0b1e3d;
+            color: white;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+          }
+
+          button:hover {
+            background-color: #133c74;
+          }
+
+          .status {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            color: ${color};
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h2>Resend Verification Email</h2>
+          <form id="resendForm">
+            <input type="text" name="login" placeholder="Email or Username" required value="${prefillLogin}" />
+            <button type="submit">Resend Email</button>
+          </form>
+          <div class="status" id="status">${message}</div>
+        </div>
+
+        <script>
+          const form = document.getElementById("resendForm");
+          const status = document.getElementById("status");
+
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const login = formData.get("login");
+
+            const response = await fetch("/api/resend-verification", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ login })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+              status.innerHTML = "<span style='color: green;'>Verification email sent successfully.</span>";
+            } else {
+              status.innerHTML = "<span style='color: red;'>" + (result.error || "Something went wrong.") + "</span>";
+            }
+          });
+        </script>
+      </body>
+    </html>
+  `
+}
+
 module.exports.setApp = function (app, client) {
   // Login API
   app.post("/api/login", async (req, res) => {
@@ -267,7 +371,66 @@ module.exports.setApp = function (app, client) {
       const user = await db.collection("users").findOne({ verifyToken: token })
 
       if (!user) {
-        return res.status(400).send("Invalid verification token")
+        return res.status(400).sendres.send(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>Invalid Token</title>
+                <style>
+                  body {
+                    background-color: #0b1e3d;
+                    font-family: Arial, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                  }
+          
+                  .message-box {
+                    background-color: #ffffff;
+                    padding: 2rem 3rem;
+                    border-radius: 10px;
+                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+                    text-align: center;
+                    max-width: 400px;
+                  }
+          
+                  h2 {
+                    color: #d32f2f;
+                    margin-bottom: 1rem;
+                  }
+          
+                  p {
+                    font-size: 1rem;
+                    color: #333;
+                  }
+          
+                  a {
+                    display: inline-block;
+                    margin-top: 1.5rem;
+                    text-decoration: none;
+                    background-color: #0b1e3d;
+                    color: #fff;
+                    padding: 0.6rem 1.2rem;
+                    border-radius: 5px;
+                    transition: background-color 0.3s ease;
+                  }
+          
+                  a:hover {
+                    background-color: #133c74;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="message-box">
+                  <h2>Invalid Verification Token</h2>
+                  <p>The email verification link is no longer valid or has already been used.</p>
+                  <a href="${appName}/resend-verification">Resend Verification Email</a>
+                </div>
+              </body>
+            </html>
+          `)
       }
 
       await db.collection("users").updateOne(
@@ -676,7 +839,66 @@ module.exports.setApp = function (app, client) {
     })
 
     if (!user) {
-      return res.status(400).send("Reset link is invalid or expired.")
+      return res.status(400).sendres.send(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Invalid or Expired Link</title>
+              <style>
+                body {
+                  background-color: #0b1e3d;
+                  font-family: Arial, sans-serif;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  height: 100vh;
+                  margin: 0;
+                }
+        
+                .message-box {
+                  background-color: #ffffff;
+                  padding: 2rem 3rem;
+                  border-radius: 10px;
+                  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+                  text-align: center;
+                  max-width: 400px;
+                }
+        
+                h2 {
+                  color: #d32f2f;
+                  margin-bottom: 1rem;
+                }
+        
+                p {
+                  font-size: 1rem;
+                  color: #333;
+                }
+        
+                a {
+                  display: inline-block;
+                  margin-top: 1.5rem;
+                  text-decoration: none;
+                  background-color: #0b1e3d;
+                  color: #fff;
+                  padding: 0.6rem 1.2rem;
+                  border-radius: 5px;
+                  transition: background-color 0.3s ease;
+                }
+        
+                a:hover {
+                  background-color: #133c74;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="message-box">
+                <h2>Link Expired or Invalid</h2>
+                <p>Your password reset link is no longer valid. Please request a new one.</p>
+                <a href="${appName}/forgot-password">Request New Link</a>
+              </div>
+            </body>
+          </html>
+        `)
     }
 
     res.send(`
@@ -851,6 +1073,138 @@ module.exports.setApp = function (app, client) {
     } catch (e) {
       console.error(e)
       res.status(500).send("Server error resetting password.")
+    }
+  })
+
+  app.get("/forgot-password", (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Forgot Password</title>
+          <style>
+            body {
+              background-color: #0b1e3d;
+              font-family: Arial, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              margin: 0;
+            }
+  
+            .container {
+              background-color: #ffffff;
+              padding: 2rem 3rem;
+              border-radius: 10px;
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+              text-align: center;
+              max-width: 400px;
+              width: 100%;
+            }
+  
+            h2 {
+              color: #0b1e3d;
+              margin-bottom: 1.5rem;
+            }
+  
+            input[type="email"] {
+              width: 100%;
+              padding: 0.75rem;
+              margin-bottom: 1rem;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              font-size: 1rem;
+            }
+  
+            button {
+              width: 100%;
+              padding: 0.75rem;
+              background-color: #0b1e3d;
+              color: white;
+              font-size: 1rem;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+              transition: background-color 0.3s ease;
+            }
+  
+            button:hover {
+              background-color: #133c74;
+            }
+  
+            .status {
+              margin-top: 1rem;
+              font-size: 0.95rem;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Forgot Your Password?</h2>
+            <form id="resetForm">
+              <input type="email" name="email" placeholder="Enter your email" required />
+              <button type="submit">Send Reset Link</button>
+            </form>
+            <div class="status" id="status"></div>
+          </div>
+  
+          <script>
+            const form = document.getElementById("resetForm");
+            const status = document.getElementById("status");
+  
+            form.addEventListener("submit", async (e) => {
+              e.preventDefault();
+              const formData = new FormData(form);
+              const email = formData.get("email");
+  
+              const response = await fetch("/api/forgot-password-email", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email })
+              });
+  
+              const result = await response.json();
+              if (response.ok) {
+                status.innerHTML = "<span style='color: green;'>Reset link sent! Check your email.</span>";
+              } else {
+                status.innerHTML = "<span style='color: red;'>" + (result.error || "Something went wrong.") + "</span>";
+              }
+            });
+          </script>
+        </body>
+      </html>
+    `)
+  })
+
+  app.get("/resend-verification", async (req, res) => {
+    const login = req.query.login
+
+    if (login) {
+      try {
+        const db = client.db("app")
+        let user = await db.collection("users").findOne({
+          $or: [{ email: login }, { username: login }],
+        })
+
+        if (!user) {
+          return res.send(renderResendForm("User not found", "red"))
+        }
+
+        if (user.isVerified) {
+          return res.send(renderResendForm("User is already verified", "green"))
+        }
+
+        return res.send(renderResendForm("", "", login))
+      } catch (e) {
+        console.error(e)
+        return res.send(renderResendForm("Server error occurred", "red"))
+      }
+    } else {
+      // Show blank form
+      return res.send(renderResendForm())
     }
   })
 }
