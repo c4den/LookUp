@@ -839,7 +839,7 @@ module.exports.setApp = function (app, client) {
     })
 
     if (!user) {
-      return res.status(400).sendres.send(`
+      return res.status(400).send(`
           <!DOCTYPE html>
           <html>
             <head>
