@@ -8,7 +8,7 @@ const nodemailer = require("nodemailer")
 
 const saltRounds = 10
 // Change this to domain which API is running on
-const appName = "134.199.204.181:3000"
+const appName = "http://134.199.204.181:3000"
 
 const sgMail = require("@sendgrid/mail")
 sgMail.setApiKey(process.env.SEND_GRID_API)
@@ -330,6 +330,8 @@ module.exports.setApp = function (app, client) {
         .catch((error) => {
           console.error(error)
         })
+
+      res.status(200).json({ message: "Verification code sent to email" })
     } catch (e) {
       console.error(e)
       return res
