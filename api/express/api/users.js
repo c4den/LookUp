@@ -589,13 +589,88 @@ module.exports.setApp = function (app, client) {
       return res.status(400).send("Reset link is invalid or expired.")
     }
 
-    // Serve form
     res.send(`
-      <form action="/api/reset-password/${token}" method="POST">
-        <label>New Password:</label><br>
-        <input type="password" name="newPassword" required /><br>
-        <button type="submit">Reset Password</button>
-      </form>
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Reset Password</title>
+          <style>
+            body {
+              background-color: #0b1e3d;
+              font-family: Arial, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              margin: 0;
+            }
+
+            .container {
+              background-color: #ffffff;
+              padding: 2rem 3rem;
+              border-radius: 10px;
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+              width: 100%;
+              max-width: 400px;
+            }
+
+            h2 {
+              margin-bottom: 1.5rem;
+              text-align: center;
+              color: #0b1e3d;
+            }
+
+            label {
+              display: block;
+              margin-bottom: 0.5rem;
+              font-weight: bold;
+            }
+
+            input[type="password"] {
+              width: 100%;
+              padding: 0.75rem;
+              margin-bottom: 1rem;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              font-size: 1rem;
+            }
+
+            button {
+              width: 100%;
+              padding: 0.75rem;
+              background-color: #0b1e3d;
+              color: white;
+              font-size: 1rem;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+              transition: background-color 0.3s ease;
+            }
+
+            button:hover {
+              background-color: #133c74;
+            }
+
+            .footer {
+              text-align: center;
+              margin-top: 1rem;
+              font-size: 0.85rem;
+              color: #555;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Reset Your Password</h2>
+            <form action="/api/reset-password/${token}" method="POST">
+              <label for="newPassword">New Password</label>
+              <input type="password" name="newPassword" id="newPassword" required />
+              <button type="submit">Reset Password</button>
+            </form>
+            <div class="footer">Make sure to choose a strong password.</div>
+          </div>
+        </body>
+      </html>
     `)
   })
 
