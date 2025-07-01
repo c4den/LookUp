@@ -188,7 +188,7 @@ module.exports.setApp = function (app, client) {
         subject: "Verify your email",
         html: `
                   <h3>Welcome to the app!</h3>
-                  <p>Click <a href="${verifyLink}">here</a> to verify your email.</p>
+                  <p><a href="${verifyLink}">Click here</a> to verify your email.</p>
                   <p>Or use this 6-digit code in the mobile app: <strong>${verificationCode}</strong></p>
                 `,
       }
@@ -318,7 +318,7 @@ module.exports.setApp = function (app, client) {
         subject: "Resend Email Verification",
         html: `
                     <h3>Verify your email</h3>
-                    <p>Click <a href="${verifyLink}">here</a> to verify your email.</p>
+                    <p><a href="${verifyLink}">Click here</a> to verify your email.</p>
                     <p>Or use this 6-digit code in the mobile app: <strong>${newCode}</strong></p>
                 `,
       }
@@ -365,13 +365,26 @@ module.exports.setApp = function (app, client) {
         }
       )
 
+      const resetToken = generateToken()
+      const resetLink = `${appName}/reset-password/${resetToken}`
+
+      await db.collection("users").updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            resetToken,
+            resetTokenExpires: new Date(Date.now() + 10 * 60 * 1000),
+          },
+        }
+      )
+
       const msg = {
         to: email,
         from: process.env.SEND_GRID_FROM,
         subject: "Your Password Reset Code",
         html: `
                     <h3>Reset Your Password</h3>
-                    <p>Use the following code to reset your password in the mobile app:</p>
+                    <p>Use the following code or <a href="${resetLink}">click here</a> to reset your password in the mobile app:</p>
                     <h2>${resetCode}</h2>
                     <p>This code expires in 10 minutes.</p>
                 `,
@@ -559,6 +572,62 @@ module.exports.setApp = function (app, client) {
     } catch (e) {
       console.error(e)
       res.status(500).json({ error: `Failed to delete user: ${e}` })
+    }
+  })
+
+  app.get("/reset-password/:token", async (req, res) => {
+    const token = req.params.token
+
+    // Optionally validate token exists
+    const db = client.db("app")
+    const user = await db.collection("users").findOne({
+      resetToken: token,
+      resetTokenExpires: { $gt: new Date() },
+    })
+
+    if (!user) {
+      return res.status(400).send("Reset link is invalid or expired.")
+    }
+
+    // Serve form
+    res.send(`
+      <form action="/api/reset-password/${token}" method="POST">
+        <label>New Password:</label><br>
+        <input type="password" name="newPassword" required /><br>
+        <button type="submit">Reset Password</button>
+      </form>
+    `)
+  })
+
+  app.post("/api/reset-password/:token", async (req, res) => {
+    const { token } = req.params
+    const { newPassword } = req.body
+
+    try {
+      const db = client.db("app")
+      const user = await db.collection("users").findOne({
+        resetToken: token,
+        resetTokenExpires: { $gt: new Date() },
+      })
+
+      if (!user) {
+        return res.status(400).send("Reset link is invalid or expired.")
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
+
+      await db.collection("users").updateOne(
+        { _id: user._id },
+        {
+          $set: { password: hashedPassword },
+          $unset: { resetToken: "", resetTokenExpires: "" },
+        }
+      )
+
+      res.send("Password has been reset successfully.")
+    } catch (e) {
+      console.error(e)
+      res.status(500).send("Server error resetting password.")
     }
   })
 }
