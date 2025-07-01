@@ -24,6 +24,6 @@ const favoritesAPI = require("./api/favorites.js")
 favoritesAPI.setApp(app, client)
 
 // previous iteration: app.listen(PORT, () => {)
-app.listen(PORT, () => {
-  console.log(`Express API running at http://localhost:${PORT}`)
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Express API listening at: ${PORT}`)
 })
