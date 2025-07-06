@@ -313,7 +313,9 @@ module.exports.setApp = function (app, client) {
           console.log("Email sent")
         })
         .catch((error) => {
-          console.error(error)
+          return res
+            .status(500)
+            .json({ error: `Error during sending reset code: ${e}` })
         })
 
       const resultId = result.insertedId
@@ -570,7 +572,9 @@ module.exports.setApp = function (app, client) {
           console.log("Email sent")
         })
         .catch((error) => {
-          console.error(error)
+          return res
+            .status(500)
+            .json({ error: `Error during sending mail, error: ${e}` })
         })
 
       res.status(200).json({ message: "Verification code sent to email" })
@@ -649,7 +653,9 @@ module.exports.setApp = function (app, client) {
           console.log("Email sent")
         })
         .catch((error) => {
-          console.error(error)
+          return res
+            .status(500)
+            .json({ error: `Error during sending reset code: ${e}` })
         })
 
       res.status(200).json({ message: "Reset code sent to email" })
