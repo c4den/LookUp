@@ -224,6 +224,8 @@ def bounding_box_corners():
             "bottom_right": [x1_orig, y1_orig]
         }
         corner_data.append(corners)
+        
+    return jsonify(corner_data)
 
 if __name__ == '__main__':
     app.run(port=5001)
