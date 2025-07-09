@@ -77,7 +77,7 @@ def detect_and_annotate():
     return send_file(buf, mimetype='image/jpeg')
 
 @app.route('/bounding-box-corners-old', methods=['POST'])
-def bounding_box_corners():
+def bounding_box_corners_old():
     image_file = request.files['image']
     confidence = float(request.form.get('confidence', 0.5))
     iou = float(request.form.get('iou', 0.3))
