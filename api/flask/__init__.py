@@ -141,7 +141,7 @@ def detect_and_annotate_resized():
 
     return send_file(buf, mimetype='image/jpeg')
 
-@app.route('/bounding-box-corners', methods=['POST'])
+@app.route('/bounding-box-corners-old', methods=['POST'])
 def bounding_box_corners_old():
     image_file = request.files['image']
     confidence = float(request.form.get('confidence', 0.5))
@@ -208,6 +208,94 @@ def bounding_box_corners_old():
         }
         corner_data.append(corners)
 
+    return jsonify(corner_data)
+
+
+@app.route('/bounding-box-corners', methods=['POST'])
+def bounding_box_corners_new():
+    image_file = request.files['image']
+    confidence = float(request.form.get('confidence', 0.5))
+    iou = float(request.form.get('iou', 0.3))
+
+    temp_path = "/tmp/uploaded.png"
+    image_file.save(temp_path)
+
+    # Open and store original dimensions
+    img = Image.open(temp_path)
+    original_width, original_height = img.size
+
+    # Resize for inference
+    img.thumbnail((1024, 1024))  # in-place modification
+    resized_width, resized_height = img.size
+
+    # Save compressed image
+    temp_path_compressed = "/tmp/uploaded_compressed.jpg"
+    img.save(temp_path_compressed, format="JPEG", quality=85)
+
+    # Compression loop
+    max_size = 1024
+    quality = 100
+    size_limit_mb = 4
+    count = 1
+
+    while True:
+        width, height = img.size
+        print(f"Image size {count}: width {width}, height {height}")
+        print(f"{count}: {file_size_mb}")
+        img.thumbnail((max_size, max_size))
+        img.save(temp_path_compressed, format="JPEG", quality=quality)
+
+        file_size_mb = os.path.getsize(temp_path_compressed) / (1024 * 1024)
+        print(f"{count}: {file_size_mb:.2f} MB")
+        count += 1
+
+        if file_size_mb <= size_limit_mb:
+            break
+
+        max_size = int(max_size * 0.9)
+        quality = max(50, quality - 5)
+
+        if max_size < 200:
+            os.remove(temp_path)
+            os.remove(temp_path_compressed)
+            return jsonify({"error": "Cannot compress image below size limit"}), 400
+
+    # Run inference
+    result = CLIENT.infer(temp_path_compressed, model_id=MODEL_ID)
+    predictions = result.get('predictions', [])
+    predictions = [p for p in predictions if p['confidence'] >= confidence]
+    predictions = non_max_suppression(predictions, iou)
+
+    os.remove(temp_path)
+
+    # Calculate scale factors to restore original coordinates
+    scale_x = original_width / resized_width
+    scale_y = original_height / resized_height
+
+    corner_data = []
+    for pred in predictions:
+        # Get resized bbox coordinates
+        x0 = pred['x'] - pred['width'] / 2
+        y0 = pred['y'] - pred['height'] / 2
+        x1 = pred['x'] + pred['width'] / 2
+        y1 = pred['y'] + pred['height'] / 2
+
+        # Scale to original image dimensions
+        x0_orig = x0 * scale_x
+        y0_orig = y0 * scale_y
+        x1_orig = x1 * scale_x
+        y1_orig = y1 * scale_y
+
+        corners = {
+            "class": pred["class"],
+            "confidence": pred["confidence"],
+            "top_left": [x0_orig, y0_orig],
+            "top_right": [x1_orig, y0_orig],
+            "bottom_left": [x0_orig, y1_orig],
+            "bottom_right": [x1_orig, y1_orig]
+        }
+        corner_data.append(corners)
+        
     return jsonify(corner_data)
 
 if __name__ == '__main__':
