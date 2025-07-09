@@ -39,6 +39,40 @@ module.exports.setApp = function (app, client) {
   })
 
   app.post(
+    "/api/proxy-detect-resized",
+    upload.single("image"),
+    async (req, res) => {
+      try {
+        const confidence = 0.5
+        const iou = 0.3
+
+        const form = new FormData()
+        form.append("image", fs.createReadStream(req.file.path))
+        form.append("confidence", confidence)
+        form.append("iou", iou)
+
+        // POST to Flask
+        const response = await axios.post(
+          "http://localhost:5001/detect-and-annotat-resized",
+          form,
+          {
+            headers: form.getHeaders(),
+            responseType: "stream",
+          }
+        )
+
+        res.set("Content-Type", "image/jpeg")
+        response.data.pipe(res)
+      } catch (error) {
+        console.error("Error calling Python API:", error.message)
+        res.status(500).send("Error processing image")
+      } finally {
+        fs.unlink(req.file.path, () => {})
+      }
+    }
+  )
+
+  app.post(
     "/api/proxy-box-corners",
     upload.single("image"),
     async (req, res) => {

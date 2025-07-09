@@ -76,6 +76,71 @@ def detect_and_annotate():
 
     return send_file(buf, mimetype='image/jpeg')
 
+@app.route('/detect-and-annotate-resized', methods=['POST'])
+def detect_and_annotate_resized():
+    image_file = request.files['image']
+    confidence = float(request.form.get('confidence', 0.5))
+    iou = float(request.form.get('iou', 0.3))
+
+    temp_path = "/tmp/uploaded.png"
+    image_file.save(temp_path)
+
+    # Load original image and store original size
+    img = Image.open(temp_path).convert("RGB")
+    original_width, original_height = img.size
+
+    # Resize image for inference
+    img.thumbnail((1024, 1024))
+    resized_width, resized_height = img.size
+
+    # Save compressed image
+    temp_path_compressed = "/tmp/uploaded_compressed.jpg"
+    img.save(temp_path_compressed, format="JPEG", quality=85)
+
+    # Ensure it fits under 4MB
+    max_size = 1024
+    quality = 85
+    size_limit_mb = 4
+    while True:
+        img.thumbnail((max_size, max_size))
+        img.save(temp_path_compressed, format="JPEG", quality=quality)
+        file_size_mb = os.path.getsize(temp_path_compressed) / (1024 * 1024)
+        if file_size_mb <= size_limit_mb:
+            break
+        max_size = int(max_size * 0.9)
+        quality = max(50, quality - 5)
+        if max_size < 200:
+            os.remove(temp_path)
+            os.remove(temp_path_compressed)
+            return jsonify({"error": "Cannot compress image below size limit"}), 400
+
+    # Inference
+    result = CLIENT.infer(temp_path_compressed, model_id=MODEL_ID)
+    predictions = result.get('predictions', [])
+    predictions = [p for p in predictions if p['confidence'] >= confidence]
+    predictions = non_max_suppression(predictions, iou)
+
+    # Draw predictions on resized image
+    draw = ImageDraw.Draw(img)
+    for pred in predictions:
+        x0 = pred['x'] - pred['width'] / 2
+        y0 = pred['y'] - pred['height'] / 2
+        x1 = pred['x'] + pred['width'] / 2
+        y1 = pred['y'] + pred['height'] / 2
+        label = f"{pred['class']} {int(pred['confidence'] * 100)}%"
+        draw.rectangle([x0, y0, x1, y1], outline="magenta", width=3)
+        draw.text((x0, y0 - 10), label, fill="magenta")
+
+    # Return image as response
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    buf.seek(0)
+
+    os.remove(temp_path)
+    os.remove(temp_path_compressed)
+
+    return send_file(buf, mimetype='image/jpeg')
+
 @app.route('/bounding-box-corners-old', methods=['POST'])
 def bounding_box_corners_old():
     image_file = request.files['image']
