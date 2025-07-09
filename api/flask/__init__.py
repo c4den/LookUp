@@ -141,7 +141,7 @@ def detect_and_annotate_resized():
 
     return send_file(buf, mimetype='image/jpeg')
 
-@app.route('/bounding-box-corners-old', methods=['POST'])
+@app.route('/bounding-box-corners', methods=['POST'])
 def bounding_box_corners_old():
     image_file = request.files['image']
     confidence = float(request.form.get('confidence', 0.5))
@@ -161,7 +161,8 @@ def bounding_box_corners_old():
     count = 1
 
     while True:
-        img.thumbnail((max_size, max_size))
+        print("Image size " + count + ":" + max_size)
+        # img.thumbnail((max_size, max_size))
 
         img.save(temp_path_compressed, format="JPEG", quality=quality)
 
@@ -208,7 +209,7 @@ def bounding_box_corners_old():
 
     return jsonify(corner_data)
 
-@app.route('/bounding-box-corners', methods=['POST'])
+@app.route('/bounding-box-corners-new', methods=['POST'])
 def bounding_box_corners():
     image_file = request.files['image']
     confidence = float(request.form.get('confidence', 0.5))
@@ -236,7 +237,7 @@ def bounding_box_corners():
     count = 1
 
     while True:
-        img.thumbnail((max_size, max_size))
+        # img.thumbnail((max_size, max_size))
         img.save(temp_path_compressed, format="JPEG", quality=quality)
 
         file_size_mb = os.path.getsize(temp_path_compressed) / (1024 * 1024)
