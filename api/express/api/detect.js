@@ -53,7 +53,7 @@ module.exports.setApp = function (app, client) {
 
         // POST to Flask
         const response = await axios.post(
-          "http://localhost:5001/detect-and-annotat-resized",
+          "http://localhost:5001/detect-and-annotate-resized",
           form,
           {
             headers: form.getHeaders(),
