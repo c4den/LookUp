@@ -3,7 +3,6 @@ from PIL import Image, ImageDraw
 from inference_sdk import InferenceHTTPClient
 import io
 import os
-import base64
 
 app = Flask(__name__)
 
@@ -221,11 +220,10 @@ def bounding_box_corners_new():
 
     img = Image.open(temp_path).convert("RGB")
 
-    # Print original image as base64
-    original_buf = io.BytesIO()
-    img.save(original_buf, format="JPEG")
-    original_base64 = base64.b64encode(original_buf.getvalue()).decode('utf-8')
-    print(f"Original image base64:\n{original_base64}\n\n")
+    # Save original image for debugging
+    original_path = "/tmp/original_debug.jpg"
+    img.save(original_path)
+    print(f"Original image saved to: {original_path}")
 
     temp_path_compressed = "/tmp/uploaded_compressed.jpg"
 
@@ -286,14 +284,18 @@ def bounding_box_corners_new():
         }
         corner_data.append(corners)
 
-    # Print annotated image as base64
-    annotated_buf = io.BytesIO()
-    img.save(annotated_buf, format="JPEG")
-    annotated_base64 = base64.b64encode(annotated_buf.getvalue()).decode('utf-8')
-    print(f"Annotated image base64:\n{annotated_base64}\n\n")  # truncated for readability
+    # Save annotated image
+    annotated_path = "/tmp/annotated_debug.jpg"
+    img.save(annotated_path)
+    print(f"Annotated image saved to: {annotated_path}")
 
     print(f"data: {corner_data}")
     return jsonify(corner_data)
+
+@app.route('/annotated/<filename>')
+def serve_annotated_image(filename):
+    return send_file(f"/tmp/{filename}", mimetype='image/jpeg')
+
 
 if __name__ == '__main__':
     app.run(port=5001)
