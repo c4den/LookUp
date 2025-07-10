@@ -212,11 +212,6 @@ def bounding_box_corners_old():
 
 @app.route('/bounding-box-corners', methods=['POST'])
 def bounding_box_corners_new():
-    from flask import request, jsonify
-    import os
-    from PIL import Image
-    import io
-
     image_file = request.files['image']
     confidence = float(request.form.get('confidence', 0.5))
     iou = float(request.form.get('iou', 0.3))
