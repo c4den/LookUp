@@ -151,10 +151,7 @@ def bounding_box_corners_old():
 
     temp_path_compressed = "/tmp/uploaded_compressed.jpg"
     img = Image.open(temp_path)
-    img.thumbnail((1024, 1024))  
-    img.save(temp_path_compressed, format="JPEG", quality=85)  
 
-    max_size = 1024
     quality = 100
     size_limit_mb = 4
     count = 1
@@ -162,7 +159,6 @@ def bounding_box_corners_old():
     while True:
         width, height = img.size
         print(f"Image size {count}: width {width}, height {height}")
-        img.thumbnail((max_size, max_size))
 
         img.save(temp_path_compressed, format="JPEG", quality=quality)
 
@@ -174,10 +170,9 @@ def bounding_box_corners_old():
         if file_size_mb <= size_limit_mb:
             break
 
-        max_size = int(max_size * 0.9) 
-        quality = max(50, quality - 5) 
+        quality = max(50, quality - 2) 
 
-        if max_size < 200:
+        if quality < 51:
             os.remove(temp_path)
             os.remove(temp_path_compressed)
             return jsonify({"error": "Cannot compress image below size limit"}), 400
