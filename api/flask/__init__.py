@@ -225,7 +225,7 @@ def bounding_box_corners_new():
     original_buf = io.BytesIO()
     img.save(original_buf, format="JPEG")
     original_base64 = base64.b64encode(original_buf.getvalue()).decode('utf-8')
-    print(f"Original image base64:\n{original_base64[:300]}...")  # truncated for readability
+    print(f"Original image base64:\n{original_base64}\n\n")
 
     temp_path_compressed = "/tmp/uploaded_compressed.jpg"
 
@@ -290,7 +290,7 @@ def bounding_box_corners_new():
     annotated_buf = io.BytesIO()
     img.save(annotated_buf, format="JPEG")
     annotated_base64 = base64.b64encode(annotated_buf.getvalue()).decode('utf-8')
-    print(f"Annotated image base64:\n{annotated_base64[:300]}...")  # truncated for readability
+    print(f"Annotated image base64:\n{annotated_base64}\n\n")  # truncated for readability
 
     print(f"data: {corner_data}")
     return jsonify(corner_data)
