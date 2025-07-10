@@ -210,7 +210,7 @@ def bounding_box_corners_old():
 
     return jsonify(corner_data)
 
-
+@app.route('/bounding-box-corners', methods=['POST'])
 def bounding_box_corners_new():
     image_file = request.files['image']
     confidence = float(request.form.get('confidence', 0.5))
