@@ -423,12 +423,12 @@ export default function MapScreen() {
 
   console.log('Effective scale factors:', { effectiveScaleX, effectiveScaleY });
 
-  const scalePoint = ([x, y]: [number, number]): [number, number] => [
-    x * effectiveScaleX,
-    y * effectiveScaleY,
-  ];
+  const dontScale = true;
 
-  // ... rest of your API logic stays the same ...
+  const scalePoint = ([x, y]: [number, number]): [number, number] => [
+    dontScale ? x : x * effectiveScaleX,
+    dontScale ? y : y * effectiveScaleY,
+  ];
 
   const formData = new FormData();
   formData.append("image", {
