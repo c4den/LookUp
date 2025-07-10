@@ -3,6 +3,7 @@ from PIL import Image, ImageDraw
 from inference_sdk import InferenceHTTPClient
 import io
 import os
+import base64
 
 app = Flask(__name__)
 
@@ -210,7 +211,6 @@ def bounding_box_corners_old():
     return jsonify(corner_data)
 
 
-@app.route('/bounding-box-corners', methods=['POST'])
 def bounding_box_corners_new():
     image_file = request.files['image']
     confidence = float(request.form.get('confidence', 0.5))
@@ -220,6 +220,13 @@ def bounding_box_corners_new():
     image_file.save(temp_path)
 
     img = Image.open(temp_path).convert("RGB")
+
+    # Print original image as base64
+    original_buf = io.BytesIO()
+    img.save(original_buf, format="JPEG")
+    original_base64 = base64.b64encode(original_buf.getvalue()).decode('utf-8')
+    print(f"Original image base64:\n{original_base64[:300]}...")  # truncated for readability
+
     temp_path_compressed = "/tmp/uploaded_compressed.jpg"
 
     # Start with high quality
@@ -256,13 +263,18 @@ def bounding_box_corners_new():
     if os.path.exists(temp_path_compressed):
         os.remove(temp_path_compressed)
 
-    # No scaling needed — use prediction coordinates directly
+    # Annotate
+    draw = ImageDraw.Draw(img)
     corner_data = []
     for pred in predictions:
         x0 = pred['x'] - pred['width'] / 2
         y0 = pred['y'] - pred['height'] / 2
         x1 = pred['x'] + pred['width'] / 2
         y1 = pred['y'] + pred['height'] / 2
+
+        draw.rectangle([x0, y0, x1, y1], outline="red", width=3)
+        label = f"{pred['class']} {int(pred['confidence'] * 100)}%"
+        draw.text((x0, y0 - 10), label, fill="red")
 
         corners = {
             "class": pred["class"],
@@ -273,6 +285,12 @@ def bounding_box_corners_new():
             "bottom_right": [x1, y1]
         }
         corner_data.append(corners)
+
+    # Print annotated image as base64
+    annotated_buf = io.BytesIO()
+    img.save(annotated_buf, format="JPEG")
+    annotated_base64 = base64.b64encode(annotated_buf.getvalue()).decode('utf-8')
+    print(f"Annotated image base64:\n{annotated_base64[:300]}...")  # truncated for readability
 
     print(f"data: {corner_data}")
     return jsonify(corner_data)
