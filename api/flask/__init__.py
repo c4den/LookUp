@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, send_from_directory
 from PIL import Image, ImageDraw
 from inference_sdk import InferenceHTTPClient
 import io
@@ -292,9 +292,9 @@ def bounding_box_corners_new():
     print(f"data: {corner_data}")
     return jsonify(corner_data)
 
-@app.route('/annotated/<filename>')
-def serve_annotated_image(filename):
-    return send_file(f"/tmp/{filename}", mimetype='image/jpeg')
+@app.route('/annotated/<filename>', methods=['GET'])
+def serve_debug_image(filename):
+    return send_from_directory('/tmp', filename)
 
 
 if __name__ == '__main__':
