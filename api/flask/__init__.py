@@ -91,7 +91,6 @@ def detect_and_annotate_resized():
 
     # Resize image for inference
     img.thumbnail((1024, 1024))
-    resized_width, resized_height = img.size
 
     # Save compressed image
     temp_path_compressed = "/tmp/uploaded_compressed.jpg"
@@ -99,7 +98,7 @@ def detect_and_annotate_resized():
 
     # Ensure it fits under 4MB
     max_size = 1024
-    quality = 85
+    quality = 100
     size_limit_mb = 4
     while True:
         img.thumbnail((max_size, max_size))
@@ -224,13 +223,8 @@ def bounding_box_corners_new():
     img = Image.open(temp_path)
     original_width, original_height = img.size
 
-    # Resize for inference
-    img.thumbnail((1024, 1024))  # in-place modification
-    resized_width, resized_height = img.size
-
     # Save compressed image
     temp_path_compressed = "/tmp/uploaded_compressed.jpg"
-    img.save(temp_path_compressed, format="JPEG", quality=85)
 
     # Compression loop
     max_size = 1024
@@ -241,15 +235,15 @@ def bounding_box_corners_new():
     while True:
         width, height = img.size
         print(f"Image size {count}: width {width}, height {height}")
-        img.thumbnail((max_size, max_size))
+        print(f"{count}: {file_size_mb:.2f} MB")
+        if file_size_mb <= size_limit_mb:
+            break
+        print(f"Setting max size to: {max_size} and setting quality to {quality}")
+        # img.thumbnail((max_size, max_size))
         img.save(temp_path_compressed, format="JPEG", quality=quality)
 
         file_size_mb = os.path.getsize(temp_path_compressed) / (1024 * 1024)
-        print(f"{count}: {file_size_mb:.2f} MB")
         count += 1
-
-        if file_size_mb <= size_limit_mb:
-            break
 
         max_size = int(max_size * 0.9)
         quality = max(50, quality - 5)
@@ -268,8 +262,6 @@ def bounding_box_corners_new():
     os.remove(temp_path)
 
     # Calculate scale factors to restore original coordinates
-    scale_x = original_width / resized_width
-    scale_y = original_height / resized_height
 
     corner_data = []
     for pred in predictions:
@@ -280,10 +272,10 @@ def bounding_box_corners_new():
         y1 = pred['y'] + pred['height'] / 2
 
         # Scale to original image dimensions
-        x0_orig = x0 * scale_x
-        y0_orig = y0 * scale_y
-        x1_orig = x1 * scale_x
-        y1_orig = y1 * scale_y
+        x0_orig = x0
+        y0_orig = y0
+        x1_orig = x1
+        y1_orig = y1
 
         corners = {
             "class": pred["class"],
