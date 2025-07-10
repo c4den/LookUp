@@ -23,6 +23,8 @@ const screenHeight = Dimensions.get("window").height;
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import { useBouncingBox } from "@/hooks/useBouncingBox"; // bouncing red box for overlays
 import { Switch } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 
 // For plane tracking switch
 import PlaneTrackingToggle from "@/components/PlaneTrackingToggle";
@@ -128,6 +130,35 @@ export default function MapScreen() {
 
   const [flights, setFlights] = useState<Flight[]>([]);
   const [flightInView, setFlightInView] = useState<Flight | null>(null);
+
+  // pinch gesture zoom state variable
+  const [zoomLevel, setZoomLevel] = useState(0);
+
+  // ============================= PINCH GESTURE FOR ZOOMING IN AND OUT =============================
+  const pinchGesture = Gesture.Pinch()
+  .onUpdate((event) => {
+    'worklet';
+    const { scale } = event;
+
+    // here we convert the pinch scale to a zoom level
+    let newZoom = zoomLevel;
+
+    if (scale > 1) {
+      // we're pinching outward (zooming in)
+      newZoom = Math.min(1, zoomLevel + (scale - 1) * 0.1);
+    } else if (scale < 1) {
+      // we're pinching inward (zooming out)
+      newZoom = Math.max(0, zoomLevel - (1 - scale) * 0.1);
+    }
+
+    // update the state from the worklet
+    runOnJS(setZoomLevel)(newZoom);
+  })
+  .onEnd(() => {
+    'worklet';
+    console.log('pinch ended, the final zoom is:', zoomLevel);
+  });
+  // ========================= END PINCH GESTURE FOR ZOOMING IN AND OUT =============================
 
   // ============================= GET USER'S BEARING =============================
   function getBearing(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -384,6 +415,32 @@ export default function MapScreen() {
   // =================================== END PING SERVER FUNCTION ==================================
 
   // ================================== UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ============
+
+  useEffect(() => {
+    // console.log("Raw Heading:", rawHeading);
+    if (userHeading !== null && userLatitude && userLongitude && isMixedReality) {
+      const newFlight = getFlightInView(
+        userLatitude,
+        userLongitude,
+        userHeading,
+        flights,
+        10
+      );
+      setFlightInView(newFlight);
+      // console.log("User Heading:", userHeading);
+      // console.log("Updated flightInView:", newFlight?.callsign ?? "None");
+    }
+  }, [userHeading, userLatitude, userLongitude, flights]);
+
+  useEffect(() => {
+    if (isMixedReality) {
+      startCompass();
+    } else {
+      stopCompass();
+    }
+  }, [isMixedReality]);
+
+  // ================================== END UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ========
 
   // ================================== OBJECT DETECTION API PAYLOAD ==================================
   const sendToObjectDetectionAPI = async (
@@ -648,15 +705,17 @@ export default function MapScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-
-            <CameraView
-              ref={cameraRef}
-              style={styles.camera}
-              onLayout={(e) => {
-                const { width, height } = e.nativeEvent.layout;
-                setPreviewSize({ width, height });
-              }}
-            />
+            <GestureDetector gesture={pinchGesture}>
+              <CameraView
+                ref={cameraRef}
+                style={styles.camera}
+                zoom={zoomLevel}
+                onLayout={(e) => {
+                  const { width, height } = e.nativeEvent.layout;
+                  setPreviewSize({ width, height });
+                }}
+              />
+            </GestureDetector>
 
             {/* This animated view handles the moving of the red-box */}
             {/* the apiBox && turns the box off if there's no response from the API. apiBox && */}
