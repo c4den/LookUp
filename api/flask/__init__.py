@@ -241,7 +241,6 @@ def bounding_box_corners_new():
     while True:
         width, height = img.size
         print(f"Image size {count}: width {width}, height {height}")
-        print(f"{count}: {file_size_mb}")
         img.thumbnail((max_size, max_size))
         img.save(temp_path_compressed, format="JPEG", quality=quality)
 
