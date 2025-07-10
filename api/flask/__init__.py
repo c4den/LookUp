@@ -295,6 +295,8 @@ def bounding_box_corners_new():
             "bottom_right": [x1_orig, y1_orig]
         }
         corner_data.append(corners)
+    
+    print(f"data: {corner_data}")
         
     return jsonify(corner_data)
 
