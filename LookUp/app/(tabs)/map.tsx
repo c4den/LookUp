@@ -176,12 +176,14 @@ export default function MapScreen() {
     return (brng + 360) % 360;
   }
 
+  // Function to get the flight in view based on user's bearing and location
+  // tolerance is a degree value that determines how close the flight's bearing must be to the user's heading to be considered "in view"
   function getFlightInView(
     userLat: number,
     userLon: number,
     heading: number,
     flights: Flight[],
-    tolerance: number = 5
+    tolerance: number = 10
   ): Flight | null {
     let inViewFlight: Flight | null = null;
 
@@ -189,7 +191,7 @@ export default function MapScreen() {
       const bearing = getBearing(userLat, userLon, flight.lat, flight.lon);
       // measure difference between heading and bearing
       const diff = Math.abs(((bearing - heading + 540) % 360) - 180); 
-      // if within tolerance (e.g., ±10°), we consider it "in view"
+      // if within tolerance, we consider it "in view"
       if (diff <= tolerance) {
         inViewFlight = flight;
         break; 
