@@ -385,50 +385,76 @@ export default function MapScreen() {
 
   // ================================== UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ============
 
+  // ================================== OBJECT DETECTION API PAYLOAD ==================================
   const sendToObjectDetectionAPI = async (
-  imageUri: string,
-  imageWidth: number,
-  imageHeight: number,
-  previewWidth: number,
-  previewHeight: number
-) => {
+    imageUri: string,
+    imageWidth: number,
+    imageHeight: number,
+    previewWidth: number,
+    previewHeight: number
+  ) => {
   console.log('Image dimensions:', { imageWidth, imageHeight });
   console.log('Preview dimensions:', { previewWidth, previewHeight });
 
   // Calculate the actual crop factor by comparing image to preview ratios
-  const imageAspect = imageWidth / imageHeight; // 0.75
-  const previewAspect = previewWidth / previewHeight; // 0.46
+  const imageAspect = imageWidth / imageHeight; 
+  const previewAspect = previewWidth / previewHeight;
+
+  let visibleImageWidth, visibleImageHeight, cropOffsetX, cropOffsetY;
 
   let cropFactor: number;
   
   if (imageAspect > previewAspect) {
-    // Image is wider - preview shows center portion horizontally
-    // The preview height maps to full image height
-    // But preview width maps to only part of image width
-    cropFactor = imageAspect / previewAspect; // ~1.63
-    console.log('Horizontal crop factor:', cropFactor);
+    // Image is wider - preview shows full height, crops width
+    visibleImageHeight = imageHeight; // Full height visible
+    visibleImageWidth = imageHeight * previewAspect; // Only center portion of width visible
+    cropOffsetX = (imageWidth - visibleImageWidth) / 2; // How much cropped from left/right
+    cropOffsetY = 0; // No vertical cropping
   } else {
-    // Image is taller - preview shows center portion vertically
-    cropFactor = previewAspect / imageAspect;
-    console.log('Vertical crop factor:', cropFactor);
+    // Image is taller - preview shows full width, crops height  
+    visibleImageWidth = imageWidth; // Full width visible
+    visibleImageHeight = imageWidth / previewAspect; // Only center portion of height visible
+    cropOffsetX = 0; // No horizontal cropping
+    cropOffsetY = (imageHeight - visibleImageHeight) / 2; // How much cropped from top/bottom
   }
+
+  console.log('Visible area:', { 
+    visibleImageWidth, 
+    visibleImageHeight, 
+    cropOffsetX, 
+    cropOffsetY 
+  });
 
   // Base scaling from image to preview
   const baseScaleX = previewWidth / imageWidth;
   const baseScaleY = previewHeight / imageHeight;
 
-  // Apply crop factor to account for the visible area
-  const effectiveScaleX = baseScaleX * cropFactor;
-  const effectiveScaleY = baseScaleY * cropFactor;
+  const dontScale = false;
 
-  console.log('Effective scale factors:', { effectiveScaleX, effectiveScaleY });
+  const scalePoint = ([x, y]: [number, number]): [number, number] => {
+    // Step 1: Check if coordinate is within visible area
+    if (x < cropOffsetX || x > (cropOffsetX + visibleImageWidth) ||
+        y < cropOffsetY || y > (cropOffsetY + visibleImageHeight)) {
+      console.log('Coordinate outside visible area:', [x, y]);
+      return [-1000, -1000]; // Return off-screen coordinates for invisible points
+    }
 
-  const dontScale = true;
+    // Step 2: Adjust for crop offset (translate to visible area coordinate system)
+    const adjustedX = x - cropOffsetX;
+    const adjustedY = y - cropOffsetY;
 
-  const scalePoint = ([x, y]: [number, number]): [number, number] => [
-    dontScale ? x : x * effectiveScaleX,
-    dontScale ? y : y * effectiveScaleY,
-  ];
+    // Step 3: Scale to preview dimensions
+    const scaledX = (adjustedX / visibleImageWidth) * previewWidth;
+    const scaledY = (adjustedY / visibleImageHeight) * previewHeight;
+
+    console.log('Coordinate mapping:', {
+      original: [x, y],
+      adjusted: [adjustedX, adjustedY],
+      scaled: [scaledX.toFixed(1), scaledY.toFixed(1)]
+    });
+
+    return [scaledX, scaledY];
+  };
 
   const formData = new FormData();
   formData.append("image", {
