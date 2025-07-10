@@ -235,14 +235,13 @@ def bounding_box_corners_new():
     while True:
         width, height = img.size
         print(f"Image size {count}: width {width}, height {height}")
+        file_size_mb = os.path.getsize(temp_path_compressed) / (width * height)
         print(f"{count}: {file_size_mb:.2f} MB")
         if file_size_mb <= size_limit_mb:
             break
         print(f"Setting max size to: {max_size} and setting quality to {quality}")
         # img.thumbnail((max_size, max_size))
         img.save(temp_path_compressed, format="JPEG", quality=quality)
-
-        file_size_mb = os.path.getsize(temp_path_compressed) / (1024 * 1024)
         count += 1
 
         max_size = int(max_size * 0.9)
