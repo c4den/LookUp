@@ -7,17 +7,20 @@ import { LoginModalProvider } from '@/context/LoginModalContext';
 import LoginModal from '@/components/LoginModal';
 import { ThemeProvider, useAppTheme } from '@/theme/ThemeContext';
 import { FlightRadiusProvider } from '@/context/FlightRadiusContext';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function RootLayout() {
   return (
-    <FlightRadiusProvider>
-      <ThemeProvider>
-        <LoginModalProvider>
-          <MainLayout />
-          <LoginModal />
-        </LoginModalProvider>
-      </ThemeProvider>
-    </FlightRadiusProvider>
+    <GestureHandlerRootView>
+      <FlightRadiusProvider>
+        <ThemeProvider>
+          <LoginModalProvider>
+            <MainLayout />
+            <LoginModal />
+          </LoginModalProvider>
+        </ThemeProvider>
+      </FlightRadiusProvider>
+    </GestureHandlerRootView>
   );
 }
 
