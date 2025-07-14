@@ -1,56 +1,92 @@
+// components/ui/FlightCard.tsx
+
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export interface FlightCardProps {
   ident: string;
   origin: string;
   destination: string;
-  departureTime: string;
-  arrivalTime: string;
+  arrivalTime: string; // formatted ETA (e.g. "Jul 14, 2025 at 02:44 PM")
   airline: string;
+  isFav: boolean;
+  onToggleFav: () => void;
   onPress: () => void;
 }
 
-const FlightCard: React.FC<FlightCardProps> = ({
+export default function FlightCard({
   ident,
   origin,
   destination,
-  departureTime,
   arrivalTime,
   airline,
+  isFav,
+  onToggleFav,
   onPress,
-}) => (
-  <TouchableOpacity style={styles.card} onPress={onPress}>
-    <View style={styles.row}>
-      <Text style={styles.ident}>{ident}</Text>
-      <Text style={styles.airline}>{airline}</Text>
-    </View>
-    <Text style={styles.route}>
-      {origin} → {destination}
-    </Text>
-    <View style={styles.times}>
-      <Text style={styles.time}>{new Date(departureTime).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}</Text>
-      <Text style={styles.time}>{new Date(arrivalTime).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}</Text>
-    </View>
-  </TouchableOpacity>
-);
+}: FlightCardProps) {
+  return (
+    <TouchableOpacity style={styles.card} onPress={onPress}>
+      <View style={styles.header}>
+        <Text style={styles.ident}>{ident}</Text>
+        <View style={styles.headerRight}>
+          <Text style={styles.airline}>{airline}</Text>
+          <TouchableOpacity onPress={onToggleFav} style={styles.starButton}>
+            <Ionicons
+              name={isFav ? "star" : "star-outline"}
+              size={20}
+              color={isFav ? "#FFD700" : "#888"}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <Text style={styles.route}>{origin} → {destination}</Text>
+
+      <View style={styles.footer}>
+        <Text style={styles.arrivalLabel}>Estimated arrival:</Text>
+        <Text style={styles.arrivalTime}>{arrivalTime}</Text>
+        <Ionicons name="chevron-forward" size={20} color="#888" />
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#2A2A2A",
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 5,
+    backgroundColor: "#1e1e1e",
+    borderRadius: 8,
+    padding: 16,
+    marginHorizontal: 16,
+    marginVertical: 8,
   },
-  row: {
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
   },
-  ident: { color: "white", fontSize: 16, fontWeight: "bold" },
-  airline: { color: "#ccc", fontSize: 14 },
-  route: { color: "white", marginTop: 5 },
-  times: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
-  time: { color: "white" },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  ident: { fontSize: 16, fontWeight: "600", color: "#fff" },
+  airline: { fontSize: 14, color: "#888", marginRight: 8 },
+  starButton: { padding: 4 },
+  route: { fontSize: 14, color: "#ccc", marginBottom: 12 },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  arrivalLabel: {
+    fontSize: 14,
+    color: "#ccc",
+    marginRight: 4,
+  },
+  arrivalTime: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "600",
+    marginRight: 8,
+  },
 });
-
-export default FlightCard;

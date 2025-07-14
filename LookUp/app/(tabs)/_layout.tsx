@@ -1,20 +1,25 @@
-import { Tabs } from 'expo-router';
+// app/_layout.tsx
+
 import React from 'react';
 import { Platform } from 'react-native';
-import { Ionicons } from "@expo/vector-icons"; 
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { LoginModalProvider } from '@/context/LoginModalContext';
 import LoginModal from '@/components/LoginModal';
 import { ThemeProvider, useAppTheme } from '@/theme/ThemeContext';
 import { FlightRadiusProvider } from '@/context/FlightRadiusContext';
+import { FavoritesProvider } from '@/context/FavoritesContext';
 
 export default function RootLayout() {
   return (
     <FlightRadiusProvider>
       <ThemeProvider>
         <LoginModalProvider>
-          <MainLayout />
-          <LoginModal />
+          <FavoritesProvider>
+            <MainLayout />
+            <LoginModal />
+          </FavoritesProvider>
         </LoginModalProvider>
       </ThemeProvider>
     </FlightRadiusProvider>
@@ -22,36 +27,30 @@ export default function RootLayout() {
 }
 
 function MainLayout() {
-  const { theme } = useAppTheme(); // <- from context && utilized for light / dark mode
+  const { theme } = useAppTheme();
 
   return (
     <Tabs
-      initialRouteName="map"
-      screenOptions={{
-        tabBarActiveTintColor: Colors[theme].tint,
+      initialRouteName="search"
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: Platform.select({
-          ios: { position: 'absolute' },
-          default: {},
-        }),
-      }}
+        tabBarActiveTintColor: Colors[theme].tint,
+        tabBarInactiveTintColor: 'gray',
+        tabBarStyle: Platform.select({ ios: { position: 'absolute' }, default: {} }),
+        tabBarIcon: ({ color, size }) => {
+          let iconName: React.ComponentProps<typeof Ionicons>['name'] = 'help-circle';
+          if (route.name === 'search') iconName = 'search';
+          else if (route.name === 'favorites') iconName = 'star';
+          else if (route.name === 'map') iconName = 'map';
+          else if (route.name === 'settings') iconName = 'settings';
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
     >
-      <Tabs.Screen name="search" options={{
-        title: '',
-        tabBarIcon: ({ color }) => <Ionicons name='search' size={24} color={color} />
-      }} />
-      <Tabs.Screen name="favorites" options={{
-        title: '',
-        tabBarIcon: ({ color }) => <Ionicons name='star' size={24} color={color} />
-      }} />
-      <Tabs.Screen name="map" options={{
-        title: '',
-        tabBarIcon: ({ color }) => <Ionicons name='map' size={24} color={color} />
-      }} />
-      <Tabs.Screen name="settings" options={{
-        title: '',
-        tabBarIcon: ({ color }) => <Ionicons name='settings' size={24} color={color} />
-      }} />
+      <Tabs.Screen name="search" options={{ title: 'Search' }} />
+      <Tabs.Screen name="favorites" options={{ title: 'Favorites' }} />
+      <Tabs.Screen name="map" options={{ title: 'Map' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );
 }

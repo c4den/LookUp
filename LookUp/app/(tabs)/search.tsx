@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import FlightCard from "../../components/FlightCard";
 import { useFlights, Flight } from "../../hooks/useFlights";
+import { useFavorites } from "../../context/FavoritesContext";
 
 const TIME_RANGES = [
   { label: "Morning (00:00–12:00)", value: "morning", start: 0, end: 11 },
@@ -33,16 +34,33 @@ export default function SearchScreen() {
     typeof flightNumber === "string" ? flightNumber : ""
   );
   const [modalVisible, setModalVisible] = useState(false);
+  const [originFilter, setOriginFilter] = useState("");
+  const [destinationFilter, setDestinationFilter] = useState("");
+  const [airlineFilter, setAirlineFilter] = useState("");
+  const [arrivalRange, setArrivalRange] = useState("");
 
-  // fetch flight data
+  // flight data + favorites
   const { data: flights = [], loading, error, refetch } = useFlights({}, 60000);
-
-  // filter by flight number only
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [filtered, setFiltered] = useState<Flight[]>([]);
+
+  // apply filters
   useEffect(() => {
     const sq = searchQuery.toLowerCase();
-    setFiltered(flights.filter((f) => f.ident.toLowerCase().includes(sq)));
-  }, [searchQuery, flights]);
+    setFiltered(
+      flights
+        .filter((f) => f.ident.toLowerCase().includes(sq))
+        .filter((f) => (originFilter ? f.origin.toLowerCase().includes(originFilter.toLowerCase()) : true))
+        .filter((f) => (destinationFilter ? f.destination.toLowerCase().includes(destinationFilter.toLowerCase()) : true))
+        .filter((f) => (airlineFilter ? f.airline.toLowerCase().includes(airlineFilter.toLowerCase()) : true))
+        .filter((f) => {
+          if (!arrivalRange) return true;
+          const hr = new Date(f.arrivalTime).getHours();
+          const range = TIME_RANGES.find((t) => t.value === arrivalRange);
+          return range ? hr >= range.start && hr <= range.end : true;
+        })
+    );
+  }, [searchQuery, flights, originFilter, destinationFilter, airlineFilter, arrivalRange]);
 
   const showTimeRangePicker = (title: string, setter: (v: string) => void) => {
     const options = TIME_RANGES.map((t) => t.label).concat("Cancel");
@@ -71,12 +89,7 @@ export default function SearchScreen() {
           onChangeText={setSearchQuery}
         />
         <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Ionicons
-            name="options-outline"
-            size={24}
-            color="#888"
-            style={styles.icon}
-          />
+          <Ionicons name="options-outline" size={24} color="#888" style={styles.icon} />
         </TouchableOpacity>
       </View>
 
@@ -93,9 +106,10 @@ export default function SearchScreen() {
               ident={item.ident}
               origin={item.origin}
               destination={item.destination}
-              departureTime={item.departureTime}
               arrivalTime={item.arrivalTime}
               airline={item.airline}
+              isFav={isFavorite(item)}
+              onToggleFav={() => toggleFavorite(item)}
               onPress={() =>
                 router.push({ pathname: "/flightDetails", params: { ...item } })
               }
@@ -118,13 +132,58 @@ export default function SearchScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* advanced filters UI as before */}
+            <Text style={styles.modalTitle}>Advanced Filters</Text>
+
+            <TextInput
+              style={styles.filterInput}
+              placeholder="Origin"
+              placeholderTextColor="#888"
+              value={originFilter}
+              onChangeText={setOriginFilter}
+            />
+            <TextInput
+              style={styles.filterInput}
+              placeholder="Destination"
+              placeholderTextColor="#888"
+              value={destinationFilter}
+              onChangeText={setDestinationFilter}
+            />
+            <TextInput
+              style={styles.filterInput}
+              placeholder="Airline"
+              placeholderTextColor="#888"
+              value={airlineFilter}
+              onChangeText={setAirlineFilter}
+            />
+
             <Pressable
-              style={styles.applyButton}
-              onPress={() => setModalVisible(false)}
+              style={styles.rangeButton}
+              onPress={() => showTimeRangePicker("Arrival Time", setArrivalRange)}
             >
-              <Text style={styles.applyText}>Apply</Text>
+              <Text style={styles.rangeButtonText}>
+                Arrival: {arrivalRange || "Any"}
+              </Text>
             </Pressable>
+
+            <View style={styles.modalFooter}>
+              <Pressable
+                style={styles.clearButton}
+                onPress={() => {
+                  setOriginFilter("");
+                  setDestinationFilter("");
+                  setAirlineFilter("");
+                  setArrivalRange("");
+                }}
+              >
+                <Text style={styles.clearText}>Clear</Text>
+              </Pressable>
+              <Pressable
+                style={styles.applyButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.applyText}>Apply</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -134,11 +193,7 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#000" },
-  header: {
-    paddingVertical: 16,
-    alignItems: "center",
-    backgroundColor: "#000",
-  },
+  header: { paddingVertical: 16, alignItems: "center", backgroundColor: "#000" },
   headerTitle: { color: "#fff", fontSize: 20, fontWeight: "600" },
   searchBox: {
     flexDirection: "row",
@@ -149,12 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   icon: { marginHorizontal: 4 },
-  input: {
-    flex: 1,
-    height: 40,
-    color: "#fff",
-    marginHorizontal: 8,
-  },
+  input: { flex: 1, height: 40, color: "#fff", marginHorizontal: 8 },
   loader: { flex: 1, justifyContent: "center" },
   listContent: { paddingBottom: 80 },
   emptyText: { textAlign: "center", marginTop: 32, color: "#888" },
@@ -169,12 +219,38 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
+  modalTitle: { color: "#fff", fontSize: 18, fontWeight: "bold", marginBottom: 12 },
+  filterInput: {
+    backgroundColor: "#1e1e1e",
+    color: "#fff",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  rangeButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#333",
+    marginVertical: 6,
+    alignItems: "center",
+  },
+  rangeButtonText: { color: "#fff" },
+  modalFooter: { flexDirection: "row", justifyContent: "space-between", marginTop: 16 },
+  clearButton: {
+    flex: 1,
+    backgroundColor: "#555",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginRight: 8,
+  },
+  clearText: { color: "#fff", fontWeight: "600" },
   applyButton: {
+    flex: 1,
     backgroundColor: "#007AFF",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 16,
   },
   applyText: { color: "#fff", fontWeight: "600" },
 });
