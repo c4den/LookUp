@@ -13,16 +13,18 @@ import { FavoritesProvider } from '@/context/FavoritesContext';
 
 export default function RootLayout() {
   return (
-    <FlightRadiusProvider>
-      <ThemeProvider>
-        <LoginModalProvider>
-          <FavoritesProvider>
-            <MainLayout />
-            <LoginModal />
-          </FavoritesProvider>
-        </LoginModalProvider>
-      </ThemeProvider>
-    </FlightRadiusProvider>
+    <GestureHandlerRootView>
+      <FlightRadiusProvider>
+        <ThemeProvider>
+          <LoginModalProvider>
+            <FavoritesProvider>
+              <MainLayout />
+              <LoginModal />
+            </FavoritesProvider>
+          </LoginModalProvider>
+        </ThemeProvider>
+      </FlightRadiusProvider>
+    </GestureHandlerRootView>
   );
 }
 
