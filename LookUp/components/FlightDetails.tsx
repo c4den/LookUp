@@ -10,149 +10,140 @@ import {
   StyleSheet,
   Platform,
   StatusBar,
+  ScrollView,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useFavorites } from "../context/FavoritesContext";
 
 // Map of IATA codes to country codes for flags
 const AIRPORT_TO_COUNTRY: Record<string, string> = {
-  BED: "us",
-  PBI: "us",
-  JFK: "us",
-  LAX: "us",
-  LHR: "gb",
-  CDG: "fr",
-  FRA: "de",
-  DXB: "ae",
-  SYD: "au",
+  SJU: "pr",
+  MCO: "us",
   // add more mappings as needed
 };
 
 type Params = {
-  ident?: string;
-  origin?: string;
-  destination?: string;
-  arrivalTime?: string;
-  airline?: string;
+  id?: string;
+  flight?: string;
+  callsign?: string;
+  lat?: string;
+  lon?: string;
+  track?: string;
+  alt?: string;
+  gspeed?: string;
+  vspeed?: string;
+  squawk?: string;
+  timestamp?: string;
+  source?: string;
+  hex?: string;
+  type?: string;
+  reg?: string;
+  painted_as?: string;
+  operating_as?: string;
+  orig_iata?: string;
+  orig_icao?: string;
+  dest_iata?: string;
+  dest_icao?: string;
+  eta?: string;
 };
 
 export default function FlightDetails() {
   const router = useRouter();
-  const { ident, origin, destination, arrivalTime, airline } =
-    useLocalSearchParams<Params>();
+  const params = useLocalSearchParams<Params>();
+  const {
+    id = "",
+    flight = "",
+    callsign = "",
+    lat = "",
+    lon = "",
+    track = "",
+    alt = "",
+    gspeed = "",
+    vspeed = "",
+    squawk = "",
+    timestamp = "",
+    source = "",
+    hex = "",
+    type = "",
+    reg = "",
+    painted_as = "",
+    operating_as = "",
+    orig_iata = "",
+    orig_icao = "",
+    dest_iata = "",
+    dest_icao = "",
+    eta = "",
+  } = params;
 
-  // Format ISO arrivalTime to a friendly string
-  const fmtDateTime = (iso?: string) => {
+  const flightObj = { id, ident: flight, origin: orig_iata!, destination: dest_iata!, arrivalTime: eta!, airline: operating_as! };
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const fav = isFavorite(flightObj);
+
+  // format date/time
+  const fmt = (iso?: string) => {
     if (!iso) return "—";
     const dt = new Date(iso);
-    if (isNaN(dt.getTime())) return "—";
-    return dt.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (isNaN(dt.getTime())) return iso;
+    return dt.toLocaleString();
   };
 
-  const originCountry = origin
-    ? AIRPORT_TO_COUNTRY[origin.toUpperCase()]
-    : undefined;
-  const destCountry = destination
-    ? AIRPORT_TO_COUNTRY[destination.toUpperCase()]
-    : undefined;
+  const originCountry = AIRPORT_TO_COUNTRY[orig_iata!.toUpperCase()];
+  const destCountry = AIRPORT_TO_COUNTRY[dest_iata!.toUpperCase()];
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.closeText}>✕</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+          <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Flight #{ident ?? "—"}</Text>
-        <View style={styles.spacer} />
+        <Text style={styles.title}>Flight {flight || callsign || "—"}</Text>
       </View>
-
-      {/* Origin Section */}
-      <View style={styles.section}>
-        <Text style={styles.label}>Origin</Text>
-        <View style={styles.row}>
-          <Text style={styles.value}>{origin ?? "—"}</Text>
-          {originCountry && (
-            <Image
-              source={{ uri: `https://flagcdn.com/w80/${originCountry}.png` }}
-              style={styles.flag}
-            />
-          )}
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Route */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Route</Text>
+          <Text style={styles.sectionText}>{orig_iata} ({orig_icao}) → {dest_iata} ({dest_icao})</Text>
         </View>
-      </View>
-
-      {/* Destination Section */}
-      <View style={styles.section}>
-        <Text style={styles.label}>Destination</Text>
-        <View style={styles.row}>
-          <Text style={styles.value}>{destination ?? "—"}</Text>
-          {destCountry && (
-            <Image
-              source={{ uri: `https://flagcdn.com/w80/${destCountry}.png` }}
-              style={styles.flag}
-            />
-          )}
+        {/* Timing */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Timing</Text>
+          <Text style={styles.sectionText}>ETA: {fmt(eta)}</Text>
+          <Text style={styles.sectionText}>Last Update: {fmt(timestamp)}</Text>
         </View>
-        <Text style={styles.subValue}>
-          Estimated arrival: {fmtDateTime(arrivalTime)}
-        </Text>
-      </View>
-
-      {/* Airline Section */}
-      <View style={styles.section}>
-        <Text style={styles.label}>Airline</Text>
-        <Text style={styles.subValue}>{airline ?? "—"}</Text>
-      </View>
+        {/* Position & Performance */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Position & Performance</Text>
+          <Text style={styles.sectionText}>Lat/Lon: {lat}, {lon}</Text>
+          <Text style={styles.sectionText}>Altitude: {alt} ft</Text>
+          <Text style={styles.sectionText}>Ground Speed: {gspeed} kt</Text>
+          <Text style={styles.sectionText}>Vertical Speed: {vspeed} ft/min</Text>
+          <Text style={styles.sectionText}>Heading: {track}°</Text>
+        </View>
+        {/* Flight Details */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Flight Details</Text>
+          <Text style={styles.sectionText}>Type: {type}</Text>
+          <Text style={styles.sectionText}>Registration: {reg}</Text>
+          <Text style={styles.sectionText}>Squawk: {squawk}</Text>
+          <Text style={styles.sectionText}>Source: {source}</Text>
+          <Text style={styles.sectionText}>Hex: {hex}</Text>
+          <Text style={styles.sectionText}>Painted As: {painted_as}</Text>
+          <Text style={styles.sectionText}>Operating As: {operating_as}</Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1E1E1E",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-    paddingHorizontal: 24,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 15,
-  },
-  closeButton: { padding: 10 },
-  closeText: { color: "#fff", fontSize: 24, marginLeft: 14 },
-  title: { color: "#fff", fontSize: 28, fontWeight: "bold" },
-  spacer: { width: 34 },
-  section: {
-    backgroundColor: "#333",
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 15,
-    marginHorizontal: 14,
-  },
-  label: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  row: { flexDirection: "row", alignItems: "center" },
-  value: { color: "#fff", fontSize: 18 },
-  subValue: { color: "#ccc", fontSize: 16, marginTop: 5 },
-  flag: {
-    width: 40,
-    height: 25,
-    marginLeft: 10,
-    borderRadius: 3,
-  },
+  container: { flex: 1, backgroundColor: '#1E1E1E', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, justifyContent: "center", marginTop: 48},
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#000' },
+  iconBtn: { padding: 8 },
+  title: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', flex: 1 },
+  content: { padding: 16 },
+  section: { marginBottom: 24 },
+  sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  sectionText: { color: '#ccc', fontSize: 14, marginBottom: 4 },
 });

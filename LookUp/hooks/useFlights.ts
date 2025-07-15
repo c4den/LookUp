@@ -5,6 +5,9 @@ import Constants from "expo-constants";
 import * as Location from "expo-location";
 import { useFlightRadius } from "../context/FlightRadiusContext";
 
+/**
+ * Detailed Flight type including all API fields
+ */
 export interface Flight {
   id: string;
   ident: string;
@@ -12,6 +15,26 @@ export interface Flight {
   destination: string;
   arrivalTime: string;
   airline: string;
+  callsign?: string;
+  lat?: number;
+  lon?: number;
+  track?: number;
+  alt?: number;
+  gspeed?: number;
+  vspeed?: number;
+  squawk?: string;
+  timestamp?: string;
+  source?: string;
+  hex?: string;
+  type?: string;
+  reg?: string;
+  painted_as?: string;
+  operating_as?: string;
+  orig_iata?: string;
+  orig_icao?: string;
+  dest_iata?: string;
+  dest_icao?: string;
+  eta?: string;
 }
 
 export type Query = {
@@ -25,8 +48,7 @@ const BASE_URL =
 
 /**
  * Returns four points (N, E, S, W) that are `distanceKm` away
- * from the given lat/lon. Uses the haversine formula for
- * destination-point calculation.
+ * from the given lat/lon. Uses the haversine formula.
  */
 function getBoundingPoints(
   latitude: number,
@@ -40,10 +62,11 @@ function getBoundingPoints(
   const lat1 = toRad(latitude);
   const lon1 = toRad(longitude);
 
-  const destPoint = (brngDeg: number): [number, number] => {
-    const brng = toRad(brngDeg);
+  const destPoint = (bearingDeg: number): [number, number] => {
+    const brng = toRad(bearingDeg);
     const lat2 = Math.asin(
-      Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brng)
+      Math.sin(lat1) * Math.cos(d) +
+        Math.cos(lat1) * Math.sin(d) * Math.cos(brng)
     );
     const lon2 =
       lon1 +
@@ -71,7 +94,7 @@ export function useFlights(query: Query = {}, autoRefreshMs = 60000) {
   const [error, setError] = useState<string | null>(null);
   const [userBounds, setUserBounds] = useState<string | null>(null);
 
-  // compute bounds using user's location + flightRadius
+  // Compute bounds using user's location + flightRadius
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -85,8 +108,7 @@ export function useFlights(query: Query = {}, autoRefreshMs = 60000) {
         console.log(`User location: ${latitude},${longitude}`);
         const bp = getBoundingPoints(latitude, longitude, flightRadius);
         const { north, south, west, east } = bp;
-        const boundsStr =
-          `${north[0].toFixed(3)},${south[0].toFixed(3)},${west[1].toFixed(3)},${east[1].toFixed(3)}`;
+        const boundsStr = `${north[0].toFixed(3)},${south[0].toFixed(3)},${west[1].toFixed(3)},${east[1].toFixed(3)}`;
         console.log("Computed bounds:", boundsStr);
         setUserBounds(boundsStr);
       } catch {
@@ -111,6 +133,7 @@ export function useFlights(query: Query = {}, autoRefreshMs = 60000) {
 
     const url = `${BASE_URL}?${param}`;
     console.log("Calling FR24 with URL:", url);
+
     const auth = `Bearer ${
       Constants.manifest?.extra?.FR24_API_KEY ??
       Constants.expoConfig?.extra?.FR24_API_KEY ??
@@ -127,6 +150,7 @@ export function useFlights(query: Query = {}, autoRefreshMs = 60000) {
         },
       });
       const json = await resp.json();
+
       if (!resp.ok) {
         setError(json?.message || resp.statusText);
         setData([]);
@@ -139,6 +163,26 @@ export function useFlights(query: Query = {}, autoRefreshMs = 60000) {
             destination: f.dest_iata ?? "",
             arrivalTime: f.eta ?? "",
             airline: f.operating_as || f.painted_as || "",
+            callsign: f.callsign,
+            lat: f.lat,
+            lon: f.lon,
+            track: f.track,
+            alt: f.alt,
+            gspeed: f.gspeed,
+            vspeed: f.vspeed,
+            squawk: f.squawk,
+            timestamp: f.timestamp,
+            source: f.source,
+            hex: f.hex,
+            type: f.type,
+            reg: f.reg,
+            painted_as: f.painted_as,
+            operating_as: f.operating_as,
+            orig_iata: f.orig_iata,
+            orig_icao: f.orig_icao,
+            dest_iata: f.dest_iata,
+            dest_icao: f.dest_icao,
+            eta: f.eta,
           }))
         );
       } else {
@@ -152,12 +196,12 @@ export function useFlights(query: Query = {}, autoRefreshMs = 60000) {
     }
   }, [flightNum, origin, destination, userBounds]);
 
-  // initial and reactive fetch
+  // Initial fetch
   useEffect(() => {
     fetchFlights();
   }, [fetchFlights]);
 
-  // polling
+  // Polling
   useEffect(() => {
     const iv = setInterval(fetchFlights, autoRefreshMs);
     return () => clearInterval(iv);
