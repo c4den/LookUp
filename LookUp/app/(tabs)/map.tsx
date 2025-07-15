@@ -602,6 +602,7 @@ export default function MapScreen() {
 
   // ================================== CAMERA CAPTURE LOGIC ==================================================
   // Here is where we capture images from the camera at a set interval
+  
   useEffect(() => {
     // define the interval function for capturing images
     const interval = setInterval(async () => {
@@ -679,7 +680,10 @@ export default function MapScreen() {
             {flightInView && (
               <TouchableOpacity
                 onPress={() =>
-                  router.push({pathname: "/search", params: { flightNumber: flightInView.flight ?? "" } })
+                  router.push({
+                    pathname: "/search",
+                    params: { flightNumber: flightInView.flight ?? "" },
+                  })
                 }
                 style={{
                   position: "absolute",
@@ -837,7 +841,7 @@ export default function MapScreen() {
         }}
       >
         <Button
-          title="(DEBUG) Refresh Aircraft Data"
+          title="Refresh Aircraft Data"
           onPress={refreshAircraftData}
         />
       </View>

@@ -10,6 +10,7 @@ import LoginModal from '@/components/LoginModal';
 import { ThemeProvider, useAppTheme } from '@/theme/ThemeContext';
 import { FlightRadiusProvider } from '@/context/FlightRadiusContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function RootLayout() {
   return (

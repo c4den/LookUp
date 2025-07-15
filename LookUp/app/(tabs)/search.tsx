@@ -29,7 +29,7 @@ const TIME_RANGES = [
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { flightNumber } = useLocalSearchParams<{ flightNumber?: string }>();
+  const { flightNumber } = useLocalSearchParams<{ flightNumber?: string | string[] }>();
   const [searchQuery, setSearchQuery] = useState(
     typeof flightNumber === "string" ? flightNumber : ""
   );
@@ -43,6 +43,14 @@ export default function SearchScreen() {
   const { data: flights = [], loading, error, refetch } = useFlights({}, 60000);
   const { isFavorite, toggleFavorite } = useFavorites();
   const [filtered, setFiltered] = useState<Flight[]>([]);
+
+  // handles flightNumber parameter
+  useEffect(() => {
+    if (flightNumber) { 
+      const flightNum = Array.isArray(flightNumber) ? flightNumber[0] : flightNumber;
+      setSearchQuery(flightNum);
+    }
+  }, [flightNumber]);
 
   // apply filters
   useEffect(() => {
