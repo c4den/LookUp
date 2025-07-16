@@ -21,6 +21,12 @@ import FlightCard from "../../components/FlightCard";
 import { useFlights, Flight } from "../../hooks/useFlights";
 import { useFavorites } from "../../context/FavoritesContext";
 
+// light / dark mode imports
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedText } from '@/components/ThemedText';
+import { useAppTheme } from "@/theme/ThemeContext";
+import { Colors } from "@/constants/Colors";
+
 const TIME_RANGES = [
   { label: "Morning (00:00–12:00)", value: "morning", start: 0, end: 11 },
   { label: "Afternoon (12:00–18:00)", value: "afternoon", start: 12, end: 17 },
@@ -38,6 +44,10 @@ export default function SearchScreen() {
   const [destinationFilter, setDestinationFilter] = useState("");
   const [airlineFilter, setAirlineFilter] = useState("");
   const [arrivalRange, setArrivalRange] = useState("");
+
+  // Add theme support for light / dark mode
+  const { theme } = useAppTheme();
+  const themeColors = Colors[theme];
 
   // flight data + favorites
   const { data: flights = [], loading, error, refetch } = useFlights({}, 60000);
@@ -83,12 +93,12 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Search</Text>
-      </View>
+      <ThemedView style={styles.header}>
+        <ThemedText style={styles.headerTitle}>Search</ThemedText>
+      </ThemedView>
 
-      <View style={styles.searchBox}>
-        <Ionicons name="search" size={20} color="#888" style={styles.icon} />
+      <ThemedView style={styles.searchBox}>
+        <Ionicons name="search" size={20} colocsr="#888" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Search by Flight Number"
@@ -99,7 +109,7 @@ export default function SearchScreen() {
         <TouchableOpacity onPress={() => setModalVisible(true)}>
           <Ionicons name="options-outline" size={24} color="#888" style={styles.icon} />
         </TouchableOpacity>
-      </View>
+      </ThemedView>
 
       {loading ? (
         <ActivityIndicator style={styles.loader} size="large" />
@@ -125,9 +135,9 @@ export default function SearchScreen() {
           )}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={() => (
-            <Text style={styles.emptyText}>
+            <ThemedText style={styles.emptyText}>
               {error ? `Error: ${error}` : "No flights found."}
-            </Text>
+            </ThemedText>
           )}
         />
       )}
@@ -138,9 +148,9 @@ export default function SearchScreen() {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Advanced Filters</Text>
+        <ThemedView style={styles.modalOverlay}>
+          <ThemedView style={styles.modalContent}>
+            <ThemedText style={styles.modalTitle}>Advanced Filters</ThemedText>
 
             <TextInput
               style={styles.filterInput}
@@ -168,12 +178,12 @@ export default function SearchScreen() {
               style={styles.rangeButton}
               onPress={() => showTimeRangePicker("Arrival Time", setArrivalRange)}
             >
-              <Text style={styles.rangeButtonText}>
+              <ThemedText style={styles.rangeButtonText}>
                 Arrival: {arrivalRange || "Any"}
-              </Text>
+              </ThemedText>
             </Pressable>
 
-            <View style={styles.modalFooter}>
+            <ThemedView style={styles.modalFooter}>
               <Pressable
                 style={styles.clearButton}
                 onPress={() => {
@@ -183,17 +193,17 @@ export default function SearchScreen() {
                   setArrivalRange("");
                 }}
               >
-                <Text style={styles.clearText}>Clear</Text>
+                <ThemedText style={styles.clearText}>Clear</ThemedText>
               </Pressable>
               <Pressable
                 style={styles.applyButton}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.applyText}>Apply</Text>
+                <ThemedText style={styles.applyText}>Apply</ThemedText>
               </Pressable>
-            </View>
-          </View>
-        </View>
+            </ThemedView>
+          </ThemedView>
+        </ThemedView>
       </Modal>
     </SafeAreaView>
   );

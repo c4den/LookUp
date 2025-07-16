@@ -16,11 +16,25 @@ import { useRouter } from "expo-router";
 import FlightCard from "../../components/FlightCard";
 import { useFavorites } from "../../context/FavoritesContext";
 
+// light / dark mode imports
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedText } from '@/components/ThemedText';
+import { useAppTheme } from "@/theme/ThemeContext";
+import { Colors } from "@/constants/Colors";
+
+import { useLoginModal } from "@/context/LoginModalContext";
+
 export default function FavoritesScreen() {
   const router = useRouter();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const [searchQuery, setSearchQuery] = useState("");
   const [filtered, setFiltered] = useState(favorites);
+
+  // Add theme support for light / dark mode
+  const { theme } = useAppTheme();
+  const themeColors = Colors[theme];
+
+  const { showLoginModal } = useLoginModal();
 
   useEffect(() => {
     const sq = searchQuery.toLowerCase();
@@ -37,7 +51,14 @@ export default function FavoritesScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      <View style={styles.searchBar}>
+      <TouchableOpacity
+          style={styles.userButton}
+          onPress={showLoginModal}
+        >
+          <Ionicons name="person" size={20} color="white" />
+      </TouchableOpacity>
+
+      <ThemedView style={styles.searchBar}>
         <Ionicons name="search" size={20} color="#888" />
         <TextInput
           style={styles.input}
@@ -46,12 +67,12 @@ export default function FavoritesScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-      </View>
+      </ThemedView>
 
       {filtered.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No favorites found.</Text>
-        </View>
+        <ThemedView style={styles.empty}>
+          <ThemedText style={styles.emptyText}>No favorites found.</ThemedText>
+        </ThemedView>
       ) : (
         <FlatList
           data={filtered}
@@ -79,11 +100,21 @@ export default function FavoritesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
+  userButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 1,
+    backgroundColor: "#333",
+    borderRadius: 20,
+    padding: 8,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#1e1e1e",
     margin: 16,
+    top: 20,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,

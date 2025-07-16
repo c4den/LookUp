@@ -34,7 +34,7 @@ function MainLayout() {
 
   return (
     <Tabs
-      initialRouteName="search"
+      initialRouteName="map"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: Colors[theme].tint,

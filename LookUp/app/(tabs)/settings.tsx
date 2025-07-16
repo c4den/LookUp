@@ -74,7 +74,7 @@ function SettingsScreen() {
           />
         </View>
       </View>
-
+      {/*
       <View style={[styles.section, { backgroundColor: themeColors.background }]}>
         <ThemedText type="subtitle" style={[styles.sectionTitle]}>Notifications</ThemedText>
         <View style={[styles.item, { backgroundColor: themeColors.background }]}>
@@ -85,6 +85,7 @@ function SettingsScreen() {
           />
         </View>
       </View>
+      */}
 
       <View style={[styles.section, { backgroundColor: themeColors.background }]}>
         <ThemedText type="subtitle" style={ styles.sectionTitle }>Flight Detection Radius</ThemedText>
@@ -134,7 +135,7 @@ function SettingsScreen() {
         <ThemedText type="subtitle" style={ styles.sectionTitle }>About</ThemedText>
         <View style={[styles.item, { backgroundColor: themeColors.background }]}>
           <ThemedText>Version</ThemedText>
-          <ThemedText type="defaultSemiBold">Development Build - Semester 2 (Ugly Version)</ThemedText>
+          <ThemedText type="defaultSemiBold">Demo Build - Semester 2</ThemedText>
         </View>
         <View style={[styles.item, { backgroundColor: themeColors.background }]}> 
           <ThemedText>Developers</ThemedText>

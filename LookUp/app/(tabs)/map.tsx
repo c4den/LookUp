@@ -795,7 +795,7 @@ export default function MapScreen() {
                 flight.callsign ||
                 "Cannot determine flight name or callsign"
               }
-              description={`Altitude: ${flight.alt} ft, Speed: ${flight.gspeed} km/h`}
+              description={`Alt: ${flight.alt} ft, Spd: ${flight.gspeed} km/h, Orig: ${flight.orig_iata || flight.orig_icao || "Unknown"}, Dest: ${flight.dest_iata || flight.dest_icao || "Unknown"}`}
             >
               {/* Ionicons plane icon as marker */}
                 <View style={{ alignItems: "center", justifyContent: "center" }}>
