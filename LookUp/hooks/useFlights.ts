@@ -105,11 +105,9 @@ export function useFlights(query: Query = {}, autoRefreshMs = 60000) {
       try {
         const { coords } = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = coords;
-        console.log(`User location: ${latitude},${longitude}`);
         const bp = getBoundingPoints(latitude, longitude, flightRadius);
         const { north, south, west, east } = bp;
         const boundsStr = `${north[0].toFixed(3)},${south[0].toFixed(3)},${west[1].toFixed(3)},${east[1].toFixed(3)}`;
-        console.log("Computed bounds:", boundsStr);
         setUserBounds(boundsStr);
       } catch {
         setError("Failed to get current location");
@@ -132,7 +130,6 @@ export function useFlights(query: Query = {}, autoRefreshMs = 60000) {
     }
 
     const url = `${BASE_URL}?${param}`;
-    console.log("Calling FR24 with URL:", url);
 
     const auth = `Bearer ${
       Constants.manifest?.extra?.FR24_API_KEY ??
