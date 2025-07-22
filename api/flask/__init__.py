@@ -3,6 +3,9 @@ from PIL import Image, ImageDraw
 from inference_sdk import InferenceHTTPClient
 import io
 import os
+from update_satellites import update_satellites
+from get_user_satellites import update as update_user_satellites
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 
@@ -13,6 +16,15 @@ CLIENT = InferenceHTTPClient(
 )
 
 MODEL_ID = "my-first-project-hqotd/1" 
+
+# === Scheduler setup ===
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=update_satellites, trigger="interval", minutes=5)
+scheduler.start()
+
+@app.teardown_appcontext
+def shutdown_scheduler(exception=None):
+    scheduler.shutdown(wait=False)
 
 # === IoU helper
 def compute_iou(box1, box2):
@@ -295,6 +307,11 @@ def bounding_box_corners_new():
 @app.route('/annotated/<filename>', methods=['GET'])
 def serve_debug_image(filename):
     return send_from_directory('/tmp', filename)
+
+@app.route('/update-user-satellites', methods=['POST'])
+def trigger_update_user_satellites():
+    result = update_user_satellites()
+    return jsonify(result)
 
 
 if __name__ == '__main__':

@@ -22,6 +22,7 @@ def find_nearby_satellites(collection, user_location, max_distance_km):
     }))
 
 def update(user_location, max_distance_km):
+    print("Running update from get_user_satellites...")
     # Set up MongoDB client
     url = os.getenv('MONGODB_URI')
     client = MongoClient(url)
