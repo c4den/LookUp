@@ -24,7 +24,7 @@ def find_nearby_satellites(collection, user_location, max_distance_km):
         }
     }))
 
-@app.route('/update_satellites', methods=['POST'])
+@app.route('/get_user_satellites', methods=['POST'])
 def update(user_location, max_distance_km):
     # Set up MongoDB client
     url = os.getenv('MONGODB_URI')
