@@ -5,6 +5,9 @@ from skyfield.iokit import parse_tle_file
 from skyfield.api import wgs84
 import os
 import json
+from flask import Flask, jsonify
+
+app = Flask(__name__)
 
 def find_nearby_satellites(collection, user_location, max_distance_km):
     # Convert distance to meters (MongoDB uses meters)
@@ -21,6 +24,7 @@ def find_nearby_satellites(collection, user_location, max_distance_km):
         }
     }))
 
+@app.route('/update_satellites', methods=['POST'])
 def update(user_location, max_distance_km):
     # Set up MongoDB client
     url = os.getenv('MONGODB_URI')
@@ -60,5 +64,5 @@ def update(user_location, max_distance_km):
 
     return json.dumps(locations)
 
-#locs = update([81.3789, 28.5384], 250)  # Example usage with dummy coordinates and distance
-#print(locs)
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000)
