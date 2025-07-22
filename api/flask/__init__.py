@@ -6,6 +6,7 @@ import os
 from update_satellites import update_satellites
 from get_user_satellites import update as update_user_satellites
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers import SchedulerNotRunningError
 import json
 
 app = Flask(__name__)
@@ -25,7 +26,10 @@ scheduler.start()
 
 @app.teardown_appcontext
 def shutdown_scheduler(exception=None):
-    scheduler.shutdown(wait=False)
+    try:
+        scheduler.shutdown(wait=False)
+    except SchedulerNotRunningError:
+        pass
 
 # === IoU helper
 def compute_iou(box1, box2):
