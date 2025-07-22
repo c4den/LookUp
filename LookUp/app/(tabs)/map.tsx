@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { BlurView } from "expo-blur";
 import * as FileSystem from "expo-file-system";
+import axios from 'axios';
 
 // flight data API key
 const FLIGHTDATAAPIKEY = process.env.FLIGHT_DATA_API_KEY;
@@ -128,9 +129,20 @@ export default function MapScreen() {
     eta: string | null;
   };
 
+  type Satellite = {
+    name: string;
+    location: {
+      type: "Point";
+      coordinates: [number, number]; // [longitude, latitude]
+    };
+    altitude: number; // in kilometers
+    //velocity: number; // in km/s
+    timestamp: string; // ISO date string
+  };
+
   const [flights, setFlights] = useState<Flight[]>([]);
   const [flightInView, setFlightInView] = useState<Flight | null>(null);
-
+  const [satellites, setSatellites] = useState<Satellite[]>([]);
   // pinch gesture zoom state variable
   const [zoomLevel, setZoomLevel] = useState(0);
 
@@ -410,6 +422,30 @@ export default function MapScreen() {
       } catch (error) {
         console.log(error);
       }
+    } else {
+      console.log("User location not available");
+    }
+  };
+  const refreshSatelliteData = async () => {
+    if (userLatitude !== null && userLongitude !== null) {
+      const boundingPoints = getBoundingPoints(
+        userLatitude,
+        userLongitude,
+        flightRadius
+      );
+
+      try {
+        const response = await axios.post<Satellite[]>('http://localhost:5000/satellites', {
+          location: [userLongitude, userLatitude], // [lon, lat] as required by MongoDB GeoJSON
+          distance: flightRadius, // in kilometers
+        });
+        const satelliteData = response.data;
+        console.log(satelliteData);
+        
+        setSatellites(satelliteData);
+      } catch (error) {
+      console.log("Error fetching satellite data:", error);
+    }
     } else {
       console.log("User location not available");
     }
