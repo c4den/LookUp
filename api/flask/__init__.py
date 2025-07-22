@@ -6,6 +6,7 @@ import os
 from update_satellites import update_satellites
 from get_user_satellites import update as update_user_satellites
 from apscheduler.schedulers.background import BackgroundScheduler
+import json
 
 app = Flask(__name__)
 
