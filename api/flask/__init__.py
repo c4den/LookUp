@@ -310,8 +310,16 @@ def serve_debug_image(filename):
 
 @app.route('/update-user-satellites', methods=['POST'])
 def trigger_update_user_satellites():
-    result = update_user_satellites()
-    return jsonify(result)
+    data = request.get_json()
+    
+    if not data or "user_location" not in data or "max_distance_km" not in data:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    user_location = data["user_location"] 
+    max_distance_km = float(data["max_distance_km"])
+
+    result = update_user_satellites(user_location, max_distance_km)
+    return jsonify(json.loads(result)) 
 
 
 if __name__ == '__main__':

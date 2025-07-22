@@ -23,6 +23,8 @@ const usersAPI = require("./api/users.js")
 usersAPI.setApp(app, client)
 const favoritesAPI = require("./api/favorites.js")
 favoritesAPI.setApp(app, client)
+const satellitesAPI = require("./api/satellites.js")
+satellitesAPI.setApp(app, client)
 
 // previous iteration: app.listen(PORT, () => {)
 app.listen(PORT, "0.0.0.0", () => {

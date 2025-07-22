@@ -64,3 +64,4 @@ def update_satellites():
 
     if requests:
         collection.bulk_write(requests)
+    print("[Scheduler] Done satellite update...")
