@@ -107,10 +107,10 @@ export default function MapScreen() {
   };
 
   type Satellite = {
-    name: string;
+    Name: string;
     lat: number;
     lon: number;
-    altitude: number; // in km
+    Altitude: number; // in km
     //velocity: number; // in km/s
     timestamp: string; // ISO date string
   };
@@ -379,15 +379,18 @@ export default function MapScreen() {
         throw new Error("OBJECTDETECTAPI endpoint is not defined");
       }
       try { 
-        const response = await axios.post<Satellite[]>(OBJECTDETECTAPI + "/api/proxy-update-user-satellites", {
+        const response = await axios.post<Satellite[]>('http://134.199.204.181:3000/api/proxy-update-user-satellites', {
           user_location: userLocation, // [lon, lat] as required by MongoDB GeoJSON
           max_distance_km: flightRadius * 10, // in kilometers
         });
 
         const satelliteData = response;
-        console.log(JSON.stringify(satelliteData.data));
+        console.log("Full response:", satelliteData); // full resp
+        console.log("Response data:", satelliteData.data); //  data
+        console.log("Type of response.data:", typeof satelliteData.data); //  type
+        console.log("Is array?", Array.isArray(satelliteData.data)); //  array?
         setSatellites(satelliteData.data ?? []);
-        console.log(satellites)
+        console.log("Stored satellites: ", satellites)
         //console.log(satelliteData.data.lat);
 
       } catch (error) {
@@ -754,22 +757,22 @@ export default function MapScreen() {
           ))}
           {satellites.map((satellite) => (
             <Marker
-              key={satellite.name}
+              key={satellite.Name + satellite.lat + satellite.lon}
               coordinate={{
                 latitude: satellite.lat,
                 longitude: satellite.lon,
               }}
               title={
-                satellite.name
+                satellite.Name
               }
-              description={`Altitude: ${satellite.altitude} km`}
+              description={`Altitude: ${Math.trunc(satellite.Altitude)} km`}
             >
               {/* Ionicons plane icon as marker */}
                 <View style={{ alignItems: "center", justifyContent: "center" }}>
                 <Ionicons
-                  name="airplane"
-                  size={28}
-                  color="#007aff"
+                  name="planet-outline"
+                  size={25}
+                  color="#000000ff"
                 />
                 </View>
             </Marker>
