@@ -50,10 +50,8 @@ def update(user_location, max_distance_km):
         height = wgs84.height_of(geocentric).km
         loc = {
             'Name': name,
-            'Location': {
-                "type": "Point",
-                "coordinates": [lon.degrees, lat.degrees]
-                },
+            'lat': lat.degrees,
+            'lon': lon.degrees,
             'Altitude': wgs84.height_of(geocentric).km,
             'Timestamp': now.utc_strftime('%Y-%m-%dT%H:%M:%SZ'),
             }
