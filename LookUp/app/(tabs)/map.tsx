@@ -134,6 +134,10 @@ export default function MapScreen() {
   // pinch gesture zoom state variable
   const [zoomLevel, setZoomLevel] = useState(0);
 
+  // auto-refresh interval for flight data
+  const [isAutoRefresh, setIsAutoRefresh] = useState(false);
+  const toggleAutoRefresh = () => setIsAutoRefresh(!isAutoRefresh);
+
   // ============================= PINCH GESTURE FOR ZOOMING IN AND OUT =============================
   const pinchGesture = Gesture.Pinch()
   .onUpdate((event) => {
@@ -415,6 +419,24 @@ export default function MapScreen() {
     }
   };
   // =================================== END PING SERVER FUNCTION ==================================
+
+  // ================================== INTERVAL FLIGHT UPDATE =====================================
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    if (isAutoRefresh) {
+      interval = setInterval(() => {
+        refreshAircraftData();
+      }, 6000); // 6 seconds
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isAutoRefresh]);
+  // ================================== END INTERVAL FLIGHT UPDATE =================================
 
   // ================================== UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ============
 
@@ -843,6 +865,21 @@ export default function MapScreen() {
         <Button
           title="Refresh Aircraft Data"
           onPress={refreshAircraftData}
+        />
+      </View>
+
+      {/* Button to toggle auto-refresh */}
+      <View
+        style={{
+          position: "absolute",
+          top: "16%",
+          left: "10%",
+          zIndex: 200,
+        }}
+      >
+        <Button
+          title={isAutoRefresh ? "Auto-Refresh ON" : "Auto-Refresh OFF"}
+          onPress={toggleAutoRefresh}
         />
       </View>
     </View>
