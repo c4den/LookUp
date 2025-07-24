@@ -21,7 +21,16 @@ MODEL_ID = "my-first-project-hqotd/1"
 
 # === Scheduler setup ===
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=update_satellites, trigger='interval', minutes=4)
+scheduler.add_job(
+    func=update_satellites,
+    trigger='interval',
+    minutes=2,
+    max_instances=1,
+    coalesce=True,
+    id='satellite_update_job',
+    replace_existing=False
+)
+scheduler.add_job(lambda: print("[Test] scheduler is working", flush=True), trigger='interval', seconds=30)
 scheduler.start()
 print("🚀 Flask app started, scheduler running", flush=True)
 
