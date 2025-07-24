@@ -16,7 +16,7 @@ def is_invalid_point(doc):
 
 def update_satellites():
     start = time.time()
-    print("[Scheduler] Running satellite update...")
+    print("[Scheduler] Running satellite update...", flush = True)
     dotenv_path = find_dotenv()
     load_dotenv(dotenv_path)
     
@@ -67,4 +67,4 @@ def update_satellites():
     if requests:
         collection.bulk_write(requests)
     end = time.time()
-    print(f"[Scheduler] Done satellite update: took {end - start:.4f} seconds to execute")
+    print(f"[Scheduler] Done satellite update: took {end - start:.4f} seconds to execute", flush = True)
