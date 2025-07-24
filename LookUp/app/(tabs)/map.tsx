@@ -478,14 +478,14 @@ export default function MapScreen() {
   // ================================== UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ============
 
   useEffect(() => {
-    console.log("Raw Heading:", rawHeading);
+    // console.log("Raw Heading:", rawHeading);
     if (userHeading !== null && userLatitude && userLongitude && isMixedReality) {
       const newFlight = getFlightInView(
         userLatitude,
         userLongitude,
         userHeading,
         flights,
-        10
+        15
       );
       setFlightInView(newFlight);
       // console.log("User Heading:", userHeading);
@@ -923,7 +923,7 @@ export default function MapScreen() {
         }}
       >
         <Button
-          title="(DEBUG) Refresh Aircraft Data"
+          title="Refresh Aircraft Data"
           onPress={refreshAircraftData}
         />
       </View>
@@ -937,7 +937,7 @@ export default function MapScreen() {
         }}
       >
         <Button
-          title="(DEBUG) Refresh Satellite Data"
+          title="Refresh Satellite Data"
           onPress={refreshSatelliteData}
         />
       </View>
