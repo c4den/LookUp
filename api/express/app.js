@@ -4,6 +4,7 @@ const path = require("path")
 
 const app = express()
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 const PORT = process.env.PORT || 3000
 
 const url = process.env.MONGODB_URI
@@ -22,8 +23,10 @@ const usersAPI = require("./api/users.js")
 usersAPI.setApp(app, client)
 const favoritesAPI = require("./api/favorites.js")
 favoritesAPI.setApp(app, client)
+const satellitesAPI = require("./api/satellites.js")
+satellitesAPI.setApp(app, client)
 
 // previous iteration: app.listen(PORT, () => {)
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Express API running at http://0.0.0.0:${PORT}`)
+  console.log(`Express API listening at: ${PORT}`)
 })

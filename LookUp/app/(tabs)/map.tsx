@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { BlurView } from "expo-blur";
 import * as FileSystem from "expo-file-system";
+import axios from 'axios';
 
 // flight data API key
 const FLIGHTDATAAPIKEY = process.env.FLIGHT_DATA_API_KEY;
@@ -55,7 +56,6 @@ import { TouchableOpacity } from "react-native";
 
 // expo implementation of above:
 import { useRouter } from "expo-router";
-
 
 export default function MapScreen() {
   const { rawHeading, pitch, startCompass, stopCompass } = useCompassHeading();
@@ -128,8 +128,18 @@ export default function MapScreen() {
     eta: string | null;
   };
 
+  type Satellite = {
+    Name: string;
+    lat: number;
+    lon: number;
+    Altitude: number; // in km
+    velocity: number; // in km/s
+    timestamp: string; // ISO date string
+  };
+
   const [flights, setFlights] = useState<Flight[]>([]);
   const [flightInView, setFlightInView] = useState<Flight | null>(null);
+  const [satellites, setSatellites] = useState<Satellite[]>([]);
 
   // pinch gesture zoom state variable
   const [zoomLevel, setZoomLevel] = useState(0);
@@ -187,7 +197,7 @@ export default function MapScreen() {
     userLon: number,
     heading: number,
     flights: Flight[],
-    tolerance: number = 10
+    tolerance: number = 15
   ): Flight | null {
     let inViewFlight: Flight | null = null;
 
@@ -195,7 +205,7 @@ export default function MapScreen() {
       const bearing = getBearing(userLat, userLon, flight.lat, flight.lon);
       // measure difference between heading and bearing
       const diff = Math.abs(((bearing - heading + 540) % 360) - 180); 
-      // if within tolerance, we consider it "in view"
+      // if within tolerance 10 degrees, by default, we consider it "in view"
       if (diff <= tolerance) {
         inViewFlight = flight;
         break; 
@@ -418,6 +428,36 @@ export default function MapScreen() {
       console.log("User location not available");
     }
   };
+
+  const refreshSatelliteData = async () => {
+    if (userLatitude !== null && userLongitude !== null) {
+      const userLocation = [userLongitude, userLatitude]; // [lon, lat] as required by MongoDB GeoJSON
+      if (!OBJECTDETECTAPI) {
+        throw new Error("OBJECTDETECTAPI endpoint is not defined");
+      }
+      try { 
+        const response = await axios.post<Satellite[]>('http://134.199.204.181:3000/api/proxy-update-user-satellites', {
+          user_location: userLocation, // [lon, lat] as required by MongoDB GeoJSON
+          max_distance_km: flightRadius * 10, // in kilometers
+        });
+
+        const satelliteData = response;
+        console.log("Full response:", satelliteData); // full resp
+        console.log("Response data:", satelliteData.data); //  data
+        console.log("Type of response.data:", typeof satelliteData.data); //  type
+        console.log("Is array?", Array.isArray(satelliteData.data)); //  array?
+        setSatellites(satelliteData.data ?? []);
+        console.log("Stored satellites: ", satellites)
+        //console.log(satelliteData.data.lat);
+
+      } catch (error) {
+        console.log("Error fetching satellite data:", error);
+      }
+    } else {
+      console.log("User location not available");
+    }
+  };
+
   // =================================== END PING SERVER FUNCTION ==================================
 
   // ================================== INTERVAL FLIGHT UPDATE =====================================
@@ -426,7 +466,14 @@ export default function MapScreen() {
 
     if (isAutoRefresh) {
       interval = setInterval(() => {
-        refreshAircraftData();
+        if (isTrackingPlanes) {
+          refreshAircraftData();
+          console.log("Automatically refreshing aircraft data");
+        } else {
+          refreshSatelliteData();
+          console.log("Automatically refreshing satellite data");
+        }
+        
       }, 6000); // 6 seconds
     }
 
@@ -435,7 +482,7 @@ export default function MapScreen() {
         clearInterval(interval);
       }
     };
-  }, [isAutoRefresh]);
+  }, [isAutoRefresh, isTrackingPlanes]);
   // ================================== END INTERVAL FLIGHT UPDATE =================================
 
   // ================================== UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ============
@@ -448,7 +495,7 @@ export default function MapScreen() {
         userLongitude,
         userHeading,
         flights,
-        10
+        15
       );
       setFlightInView(newFlight);
       // console.log("User Heading:", userHeading);
@@ -467,6 +514,7 @@ export default function MapScreen() {
   // ================================== END UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ========
 
   // ================================== OBJECT DETECTION API PAYLOAD ==================================
+
   const sendToObjectDetectionAPI = async (
     imageUri: string,
     imageWidth: number,
@@ -592,7 +640,6 @@ export default function MapScreen() {
     });
   }
 };
-
   // ================================== END OBJECT DETECTION API PAYLOAD ==================================
 
   // ================================== EDGE DETECTION FOR TOOLTIP ========================================
@@ -624,9 +671,9 @@ export default function MapScreen() {
   // }, []);
   // ================================== END EDGE DETECTION FOR TOOLTIP ========================================
 
+
   // ================================== CAMERA CAPTURE LOGIC ==================================================
   // Here is where we capture images from the camera at a set interval
-  
   useEffect(() => {
     // define the interval function for capturing images
     const interval = setInterval(async () => {
@@ -664,6 +711,7 @@ export default function MapScreen() {
   }, [isMixedReality, isFocused, permission, cameraRef, captureInterval]);
   // ========================= END CAMERA CAPTURE LOGIC ========================================================
 
+
   // ========================= CAMERA DISPLAY & CONTROL ========================================================
   return (
     <View style={styles.container}>
@@ -679,7 +727,20 @@ export default function MapScreen() {
       >
         <PlaneTrackingToggle
           value={isTrackingPlanes}
-          onToggle={() => toggleTrackingPlanes()}
+          onToggle={() => {
+            toggleTrackingPlanes();
+            console.log("Plane tracking toggled:", !isTrackingPlanes);
+
+            if (!isTrackingPlanes) { // if we're turning on plane tracking, clear satellites and refresh flights
+              setSatellites([]);
+              console.log("Satellites cleared");
+              refreshAircraftData();
+            } else { // if we're turning off plane tracking, clear flights and refresh satellites
+              setFlights([]);
+              console.log("Flights cleared");
+              refreshSatelliteData();
+            }
+          }}
         />
       </View>
       {/* End plane tracking toggle switch */}
@@ -832,6 +893,28 @@ export default function MapScreen() {
                   transform: [{ rotate: `${flight.track - 90}deg` }], // planes were flying sideways, -90 degrees corrects this
                   }}
                 />
+              </View>
+            </Marker>
+          ))}
+          {satellites.map((satellite) => (
+            <Marker
+              key={satellite.Name + satellite.lat + satellite.lon}
+              coordinate={{
+                latitude: satellite.lat,
+                longitude: satellite.lon,
+              }}
+              title={
+                satellite.Name
+              }
+              description={`Alt: ${Math.trunc(satellite.Altitude)} km, Lat: ${satellite.lat.toFixed(3)}, Lon: ${satellite.lon.toFixed(3)}`}
+            >
+              {/* Ionicons planet icon as marker */}
+                <View style={{ alignItems: "center", justifyContent: "center" }}>
+                <Ionicons
+                  name="planet-outline"
+                  size={25}
+                  color="#000000ff"
+                />
                 </View>
             </Marker>
           ))}
@@ -870,12 +953,26 @@ export default function MapScreen() {
           onPress={refreshAircraftData}
         />
       </View>
+      {/* Button to ping the satellite API */}
+      <View
+        style={{
+          position: "absolute",
+          top: "16%",
+          left: "10%",
+          zIndex: 200,
+        }}
+      >
+        <Button
+          title="Refresh Satellite Data"
+          onPress={refreshSatelliteData}
+        />
+      </View>
 
       {/* Button to toggle auto-refresh */}
       <View
         style={{
           position: "absolute",
-          top: "16%",
+          top: "22%",
           left: "10%",
           zIndex: 200,
         }}
