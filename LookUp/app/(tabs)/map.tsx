@@ -84,6 +84,7 @@ export default function MapScreen() {
 
   const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 });
 
+  // determine if the screen is currently focused
   const isFocused = useIsFocused();
 
   // For the sake of placing text in another screen.
