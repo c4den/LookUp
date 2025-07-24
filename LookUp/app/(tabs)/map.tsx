@@ -463,7 +463,14 @@ export default function MapScreen() {
 
     if (isAutoRefresh) {
       interval = setInterval(() => {
-        refreshAircraftData();
+        if (isTrackingPlanes) {
+          refreshAircraftData();
+          console.log("Automatically refreshing aircraft data");
+        } else {
+          refreshSatelliteData();
+          console.log("Automatically refreshing satellite data");
+        }
+        
       }, 6000); // 6 seconds
     }
 
@@ -472,7 +479,7 @@ export default function MapScreen() {
         clearInterval(interval);
       }
     };
-  }, [isAutoRefresh]);
+  }, [isAutoRefresh, isTrackingPlanes]);
   // ================================== END INTERVAL FLIGHT UPDATE =================================
 
   // ================================== UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ============
@@ -587,6 +594,7 @@ export default function MapScreen() {
     if (!OBJECTDETECTAPI) {
       throw new Error("OBJECTDETECTAPI endpoint is not defined");
     }
+    console.log("just before fetch to object detection API");
     response = await fetch(OBJECTDETECTAPI + "/api/proxy-box-corners", {
       method: "POST",
       body: formData,
@@ -602,6 +610,7 @@ export default function MapScreen() {
     return;
   }
 
+  console.log("Response from object detection API:", response);
   const result = await response.json();
   console.log(result);
 
@@ -714,7 +723,20 @@ export default function MapScreen() {
       >
         <PlaneTrackingToggle
           value={isTrackingPlanes}
-          onToggle={() => toggleTrackingPlanes()}
+          onToggle={() => {
+            toggleTrackingPlanes();
+            console.log("Plane tracking toggled:", !isTrackingPlanes);
+
+            if (!isTrackingPlanes) { // if we're turning on plane tracking, clear satellites and refresh flights
+              setSatellites([]);
+              console.log("Satellites cleared");
+              refreshAircraftData();
+            } else { // if we're turning off plane tracking, clear flights and refresh satellites
+              setFlights([]);
+              console.log("Flights cleared");
+              refreshSatelliteData();
+            }
+          }}
         />
       </View>
       {/* End plane tracking toggle switch */}
@@ -931,7 +953,7 @@ export default function MapScreen() {
       <View
         style={{
           position: "absolute",
-          top: "20%",
+          top: "16%",
           left: "10%",
           zIndex: 200,
         }}
@@ -946,7 +968,7 @@ export default function MapScreen() {
       <View
         style={{
           position: "absolute",
-          top: "16%",
+          top: "22%",
           left: "10%",
           zIndex: 200,
         }}
