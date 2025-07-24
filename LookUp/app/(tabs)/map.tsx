@@ -132,7 +132,7 @@ export default function MapScreen() {
     lat: number;
     lon: number;
     Altitude: number; // in km
-    //velocity: number; // in km/s
+    velocity: number; // in km/s
     timestamp: string; // ISO date string
   };
 
@@ -877,7 +877,7 @@ export default function MapScreen() {
                 flight.callsign ||
                 "Cannot determine flight name or callsign"
               }
-              description={`Altitude: ${flight.alt} ft, Speed: ${flight.gspeed} km/h`}
+              description={`Alt: ${flight.alt} ft, Spd: ${flight.gspeed} km/h, Orig: ${flight.orig_iata || flight.orig_icao || "Unknown"}, Dest: ${flight.dest_iata || flight.dest_icao || "Unknown"}`}
             >
               {/* Ionicons plane icon as marker */}
                 <View style={{ alignItems: "center", justifyContent: "center" }}>
@@ -902,7 +902,7 @@ export default function MapScreen() {
               title={
                 satellite.Name
               }
-              description={`Altitude: ${Math.trunc(satellite.Altitude)} km`}
+              description={`Alt: ${Math.trunc(satellite.Altitude)} km, Lat: ${satellite.lat.toFixed(3)}, Lon: ${satellite.lon.toFixed(3)}`}
             >
               {/* Ionicons planet icon as marker */}
                 <View style={{ alignItems: "center", justifyContent: "center" }}>
