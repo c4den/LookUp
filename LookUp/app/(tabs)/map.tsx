@@ -24,6 +24,8 @@ const screenHeight = Dimensions.get("window").height;
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import { useBouncingBox } from "@/hooks/useBouncingBox"; // bouncing red box for overlays
 import { Switch } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 
 // For plane tracking switch
 import PlaneTrackingToggle from "@/components/PlaneTrackingToggle";
@@ -42,8 +44,18 @@ import { Ionicons } from "@expo/vector-icons";
 
 // for getting the compass heading from the compass heading component
 import CompassHeading from "@/components/CompassHeading";
-
 import { useCompassHeading } from "@/hooks/useCompassHeading";
+
+// to make sure the camera isn't firing when it shouldn't be 
+import { useIsFocused } from "@react-navigation/native";
+
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "../types"; 
+import { TouchableOpacity } from "react-native";
+
+// expo implementation of above:
+import { useRouter } from "expo-router";
 
 export default function MapScreen() {
   const { rawHeading, pitch, startCompass, stopCompass } = useCompassHeading();
@@ -71,6 +83,15 @@ export default function MapScreen() {
   const { flightRadius } = useFlightRadius();
 
   const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 });
+
+  const isFocused = useIsFocused();
+
+  // For the sake of placing text in another screen.
+  type NavigationProp = StackNavigationProp<RootStackParamList, "search">;
+  const navigation = useNavigation<NavigationProp>();
+
+  // expo implementation
+  const router = useRouter();
 
   // Bounding points for near flights query
   let boundingPoints: {
@@ -118,6 +139,39 @@ export default function MapScreen() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [flightInView, setFlightInView] = useState<Flight | null>(null);
   const [satellites, setSatellites] = useState<Satellite[]>([]);
+
+  // pinch gesture zoom state variable
+  const [zoomLevel, setZoomLevel] = useState(0);
+
+  // auto-refresh interval for flight data
+  const [isAutoRefresh, setIsAutoRefresh] = useState(false);
+  const toggleAutoRefresh = () => setIsAutoRefresh(!isAutoRefresh);
+
+  // ============================= PINCH GESTURE FOR ZOOMING IN AND OUT =============================
+  const pinchGesture = Gesture.Pinch()
+  .onUpdate((event) => {
+    'worklet';
+    const { scale } = event;
+
+    // here we convert the pinch scale to a zoom level
+    let newZoom = zoomLevel;
+
+    if (scale > 1) {
+      // we're pinching outward (zooming in)
+      newZoom = Math.min(1, zoomLevel + (scale - 1) * 0.1);
+    } else if (scale < 1) {
+      // we're pinching inward (zooming out)
+      newZoom = Math.max(0, zoomLevel - (1 - scale) * 0.1);
+    }
+
+    // update the state from the worklet
+    runOnJS(setZoomLevel)(newZoom);
+  })
+  .onEnd(() => {
+    'worklet';
+    console.log('pinch ended, the final zoom is:', zoomLevel);
+  });
+  // ========================= END PINCH GESTURE FOR ZOOMING IN AND OUT =============================
 
   // ============================= GET USER'S BEARING =============================
   function getBearing(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -403,6 +457,24 @@ export default function MapScreen() {
 
   // =================================== END PING SERVER FUNCTION ==================================
 
+  // ================================== INTERVAL FLIGHT UPDATE =====================================
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    if (isAutoRefresh) {
+      interval = setInterval(() => {
+        refreshAircraftData();
+      }, 6000); // 6 seconds
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isAutoRefresh]);
+  // ================================== END INTERVAL FLIGHT UPDATE =================================
+
   // ================================== UPDATE FLIGHT IN VIEW WHEN USER HEADING CHANGES ============
 
   useEffect(() => {
@@ -416,8 +488,8 @@ export default function MapScreen() {
         10
       );
       setFlightInView(newFlight);
-      console.log("User Heading:", userHeading);
-      console.log("Updated flightInView:", newFlight?.callsign ?? "None");
+      // console.log("User Heading:", userHeading);
+      // console.log("Updated flightInView:", newFlight?.callsign ?? "None");
     }
   }, [userHeading, userLatitude, userLongitude, flights]);
 
@@ -440,114 +512,153 @@ export default function MapScreen() {
     previewWidth: number,
     previewHeight: number
   ) => {
-    const scaleX = previewWidth / imageWidth;
-    const scaleY = previewHeight / imageHeight;
+  console.log('Image dimensions:', { imageWidth, imageHeight });
+  console.log('Preview dimensions:', { previewWidth, previewHeight });
 
-    const factor = 4;
-    const scalePoint = ([x, y]: [number, number]): [number, number] => [
-      x * scaleX * factor,
-      y * scaleY * factor,
-    ];
+  // Calculate the actual crop factor by comparing image to preview ratios
+  const imageAspect = imageWidth / imageHeight; 
+  const previewAspect = previewWidth / previewHeight;
 
-    const formData = new FormData();
-    formData.append("image", {
-      uri: imageUri,
-      name: "photo.jpg",
-      type: "image/jpeg",
-    } as any);
+  let visibleImageWidth, visibleImageHeight, cropOffsetX, cropOffsetY;
 
-    let response;
-    try {
-      if (!OBJECTDETECTAPI) {
-        throw new Error("OBJECTDETECTAPI endpoint is not defined");
-      }
-      response = await fetch(OBJECTDETECTAPI + "/api/proxy-box-corners", {
-        method: "POST",
-        body: formData,
-        // Do NOT set Content-Type; let fetch set it for multipart/form-data
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `API error: ${response.status} ${response.statusText} - ${errorText}`
-        );
-      }
-    } catch (error) {
-      console.error("Error sending image to object detection API:", error);
-      return;
+  let cropFactor: number;
+  
+  if (imageAspect > previewAspect) {
+    // Image is wider - preview shows full height, crops width
+    visibleImageHeight = imageHeight; // Full height visible
+    visibleImageWidth = imageHeight * previewAspect; // Only center portion of width visible
+    cropOffsetX = (imageWidth - visibleImageWidth) / 2; // How much cropped from left/right
+    cropOffsetY = 0; // No vertical cropping
+  } else {
+    // Image is taller - preview shows full width, crops height  
+    visibleImageWidth = imageWidth; // Full width visible
+    visibleImageHeight = imageWidth / previewAspect; // Only center portion of height visible
+    cropOffsetX = 0; // No horizontal cropping
+    cropOffsetY = (imageHeight - visibleImageHeight) / 2; // How much cropped from top/bottom
+  }
+
+  console.log('Visible area:', { 
+    visibleImageWidth, 
+    visibleImageHeight, 
+    cropOffsetX, 
+    cropOffsetY 
+  });
+
+  // Base scaling from image to preview
+  const baseScaleX = previewWidth / imageWidth;
+  const baseScaleY = previewHeight / imageHeight;
+
+  const dontScale = false;
+
+  const scalePoint = ([x, y]: [number, number]): [number, number] => {
+    // Step 1: Check if coordinate is within visible area
+    if (x < cropOffsetX || x > (cropOffsetX + visibleImageWidth) ||
+        y < cropOffsetY || y > (cropOffsetY + visibleImageHeight)) {
+      console.log('Coordinate outside visible area:', [x, y]);
+      return [-1000, -1000]; // Return off-screen coordinates for invisible points
     }
 
-    const result = await response.json();
-    console.log(result);
+    // Step 2: Adjust for crop offset (translate to visible area coordinate system)
+    const adjustedX = x - cropOffsetX;
+    const adjustedY = y - cropOffsetY;
 
-    // Example: result = [{ top_left: [x, y], top_right: [x, y], ... }]
-    if (Array.isArray(result) && result.length > 0) {
-      const imageAspect = imageWidth / imageHeight;
-      const previewAspect = previewWidth / previewHeight;
+    // Step 3: Scale to preview dimensions
+    const scaledX = (adjustedX / visibleImageWidth) * previewWidth;
+    const scaledY = (adjustedY / visibleImageHeight) * previewHeight;
 
-      console.log({
-        imageWidth,
-        imageHeight,
-        previewWidth,
-        previewHeight
-      });
+    console.log('Coordinate mapping:', {
+      original: [x, y],
+      adjusted: [adjustedX, adjustedY],
+      scaled: [scaledX.toFixed(1), scaledY.toFixed(1)]
+    });
 
-      const box = result[0];
-      const top_left = scalePoint(box.top_left);
-      const top_right = scalePoint(box.top_right);
-      const bottom_left = scalePoint(box.bottom_left);
-      const bottom_right = scalePoint(box.bottom_right);
-
-      const width = top_right[0] - top_left[0];
-      const height = bottom_left[1] - top_left[1];
-
-      console.log({
-        top_left,
-        top_right,
-        bottom_left,
-        bottom_right,
-      });
-
-      setApiBox({
-        top_left,
-        top_right,
-        bottom_left,
-        bottom_right,
-        width,
-        height,
-      });
-    }
+    return [scaledX, scaledY];
   };
+
+  const formData = new FormData();
+  formData.append("image", {
+    uri: imageUri,
+    name: "photo.jpg",
+    type: "image/jpeg",
+  } as any);
+
+  let response;
+  try {
+    if (!OBJECTDETECTAPI) {
+      throw new Error("OBJECTDETECTAPI endpoint is not defined");
+    }
+    response = await fetch(OBJECTDETECTAPI + "/api/proxy-box-corners", {
+      method: "POST",
+      body: formData,
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `API error: ${response.status} ${response.statusText} - ${errorText}`
+      );
+    }
+  } catch (error) {
+    console.error("Error sending image to object detection API:", error);
+    return;
+  }
+
+  const result = await response.json();
+  console.log(result);
+
+  if (Array.isArray(result) && result.length > 0) {
+    const box = result[0];
+    const top_left = scalePoint(box.top_left);
+    const top_right = scalePoint(box.top_right);
+    const bottom_left = scalePoint(box.bottom_left);
+    const bottom_right = scalePoint(box.bottom_right);
+
+    console.log('Original coordinates:', box.top_left);
+    console.log('Scaled coordinates:', top_left);
+
+    const width = top_right[0] - top_left[0];
+    const height = bottom_left[1] - top_left[1];
+
+    setApiBox({
+      top_left,
+      top_right,
+      bottom_left,
+      bottom_right,
+      width,
+      height,
+    });
+  }
+};
   // ================================== END OBJECT DETECTION API PAYLOAD ==================================
 
   // ================================== EDGE DETECTION FOR TOOLTIP ========================================
   // Edge detection listener for tooltip. If the box is on the left side, move the tooltip to the right, and vice versa.
-  useEffect(() => {
-    const listenerId = bouncingPosition.x.addListener(({ value }) => {
-      if (value > screenWidth - 450 && lastSide.current !== "left") {
-        lastSide.current = "left";
-        Animated.timing(tooltipOffset, {
-          toValue: -230, // flip to left
-          duration: flipDuration,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-          useNativeDriver: false,
-        }).start();
-      } else if (value < 240 && lastSide.current !== "right") {
-        lastSide.current = "right";
-        Animated.timing(tooltipOffset, {
-          toValue: flipRightDimensions, // flip to right
-          duration: flipDuration,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-          useNativeDriver: false,
-        }).start();
-      }
-    });
+  // useEffect(() => {
+  //   const listenerId = bouncingPosition.x.addListener(({ value }) => {
+  //     if (value > screenWidth - 450 && lastSide.current !== "left") {
+  //       lastSide.current = "left";
+  //       Animated.timing(tooltipOffset, {
+  //         toValue: -230, // flip to left
+  //         duration: flipDuration,
+  //         easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+  //         useNativeDriver: false,
+  //       }).start();
+  //     } else if (value < 240 && lastSide.current !== "right") {
+  //       lastSide.current = "right";
+  //       Animated.timing(tooltipOffset, {
+  //         toValue: flipRightDimensions, // flip to right
+  //         duration: flipDuration,
+  //         easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+  //         useNativeDriver: false,
+  //       }).start();
+  //     }
+  //   });
 
-    return () => {
-      bouncingPosition.x.removeListener(listenerId);
-    };
-  }, []);
+  //   return () => {
+  //     bouncingPosition.x.removeListener(listenerId);
+  //   };
+  // }, []);
   // ================================== END EDGE DETECTION FOR TOOLTIP ========================================
+
 
   // ================================== CAMERA CAPTURE LOGIC ==================================================
   // Here is where we capture images from the camera at a set interval
@@ -559,17 +670,13 @@ export default function MapScreen() {
       // we care that the user has granted permission to use of the camera, and that we're in mixed reality mode
       if (
         isMixedReality &&
+        isFocused &&
         permission?.status === "granted" &&
         cameraRef.current
       ) {
         try {
           // capture an image from the camera, if able to and send to API
           const photo = await cameraRef.current.takePictureAsync();
-
-          // console.log("DEBUG: photo.width =", photo.width);
-          // console.log("DEBUG: photo.height =", photo.height);
-          // console.log("DEBUG: screenWidth =", screenWidth);
-          // console.log("DEBUG: screenHeight =", screenHeight);
 
           // Log photo captured with the photo's uri or a default name
           // console.log('photo captured', photo.uri || 'unnamed_photo'); // DEBUG PHOTO CAPTURE LOG
@@ -588,8 +695,9 @@ export default function MapScreen() {
       }
     }, captureInterval);
     return () => clearInterval(interval);
-  }, [isMixedReality, permission, cameraRef, captureInterval]);
+  }, [isMixedReality, isFocused, permission, cameraRef, captureInterval]);
   // ========================= END CAMERA CAPTURE LOGIC ========================================================
+
 
   // ========================= CAMERA DISPLAY & CONTROL ========================================================
   return (
@@ -630,7 +738,13 @@ export default function MapScreen() {
             </View>
 
             {flightInView && (
-              <View
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({
+                    pathname: "/search",
+                    params: { flightNumber: flightInView.flight ?? "" },
+                  })
+                }
                 style={{
                   position: "absolute",
                   top: 120,
@@ -655,17 +769,19 @@ export default function MapScreen() {
                 <Text style={{ color: "#ccc", fontSize: 14 }}>
                   Destination: {flightInView.dest_iata ?? "N/A"}
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
-
-            <CameraView
-              ref={cameraRef}
-              style={styles.camera}
-              onLayout={(e) => {
-                const { width, height } = e.nativeEvent.layout;
-                setPreviewSize({ width, height });
-              }}
-            />
+            <GestureDetector gesture={pinchGesture}>
+              <CameraView
+                ref={cameraRef}
+                style={styles.camera}
+                zoom={zoomLevel}
+                onLayout={(e) => {
+                  const { width, height } = e.nativeEvent.layout;
+                  setPreviewSize({ width, height });
+                }}
+              />
+            </GestureDetector>
 
             {/* This animated view handles the moving of the red-box */}
             {/* the apiBox && turns the box off if there's no response from the API. apiBox && */}
@@ -684,26 +800,25 @@ export default function MapScreen() {
             )}
 
             {/* This animated view handles the tooltip for the red-box */}
-            <Animated.View
-              style={[
-                styles.infoBubble,
-                {
-                  top: Animated.add(bouncingPosition.y, new Animated.Value(10)),
-                  left: Animated.add(bouncingPosition.x, tooltipOffset),
+            {apiBox && (
+              <Animated.View
+                style={[
+                  styles.infoBubble,
+                  {
+                    top: Animated.add(bouncingPosition.y, new Animated.Value(boxHeight + 10)),
+                    left: Animated.add(bouncingPosition.x, new Animated.Value((boxWidth / 2) - (/* tooltipWidth */ 150))
+                  ),
                 },
               ]}
             >
               <BlurView intensity={50} tint="dark" style={styles.flightCard}>
-                <Text style={styles.flightTitle}>Flight 12812 ⭐</Text>
-                <Text style={styles.route}>JP → NY</Text>
-                <Text style={styles.arrival}>
-                  Estimated Arrival: 8:00PM EST
-                </Text>
-                <View style={styles.detailsButton}>
-                  <Text style={styles.detailsText}>See details</Text>
-                </View>
+                <Text style={styles.flightTitle}>{flightInView?.callsign ?? "Plane Detected"}</Text>
+                <Text style={styles.route}>{flightInView?.orig_iata ?? "This is a false positive"}</Text>
+                <Text style={styles.route}>{flightInView?.dest_iata ?? "or there is a plane detected and you need to"}</Text>
+                <Text style={styles.arrival}>{flightInView?.eta ?? "update flight info"}</Text>
               </BlurView>
             </Animated.View>
+            )}
           </>
         ) : (
           // all well and good, finish up this end - if we don't have permission, hence the else statement below (line beneath this one)
@@ -743,13 +858,13 @@ export default function MapScreen() {
               description={`Altitude: ${flight.alt} ft, Speed: ${flight.gspeed} km/h`}
             >
               {/* Ionicons plane icon as marker */}
-              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                <View style={{ alignItems: "center", justifyContent: "center" }}>
                 <Ionicons
                   name="airplane"
                   size={28}
                   color="#007aff"
                   style={{
-                    transform: [{ rotate: `${flight.track}deg` }],
+                  transform: [{ rotate: `${flight.track - 90}deg` }], // planes were flying sideways, -90 degrees corrects this
                   }}
                 />
               </View>
@@ -767,7 +882,7 @@ export default function MapScreen() {
               }
               description={`Altitude: ${Math.trunc(satellite.Altitude)} km`}
             >
-              {/* Ionicons plane icon as marker */}
+              {/* Ionicons planet icon as marker */}
                 <View style={{ alignItems: "center", justifyContent: "center" }}>
                 <Ionicons
                   name="planet-outline"
@@ -824,6 +939,21 @@ export default function MapScreen() {
         <Button
           title="(DEBUG) Refresh Satellite Data"
           onPress={refreshSatelliteData}
+        />
+      </View>
+
+      {/* Button to toggle auto-refresh */}
+      <View
+        style={{
+          position: "absolute",
+          top: "16%",
+          left: "10%",
+          zIndex: 200,
+        }}
+      >
+        <Button
+          title={isAutoRefresh ? "Auto-Refresh ON" : "Auto-Refresh OFF"}
+          onPress={toggleAutoRefresh}
         />
       </View>
     </View>
