@@ -549,6 +549,7 @@ export default function MapScreen() {
     if (!OBJECTDETECTAPI) {
       throw new Error("OBJECTDETECTAPI endpoint is not defined");
     }
+    console.log("just before fetch to object detection API");
     response = await fetch(OBJECTDETECTAPI + "/api/proxy-box-corners", {
       method: "POST",
       body: formData,
@@ -564,6 +565,7 @@ export default function MapScreen() {
     return;
   }
 
+  console.log("Response from object detection API:", response);
   const result = await response.json();
   console.log(result);
 
@@ -644,6 +646,7 @@ export default function MapScreen() {
           // Log photo captured with the photo's uri or a default name
           // console.log('photo captured', photo.uri || 'unnamed_photo'); // DEBUG PHOTO CAPTURE LOG
           if (photo.uri) {
+            // console.log('sending photo to API');
             sendToObjectDetectionAPI(
               photo.uri,
               photo.width,
