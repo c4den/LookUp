@@ -23,13 +23,8 @@ MODEL_ID = "my-first-project-hqotd/1"
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=update_satellites, trigger='interval', minutes=2)
 scheduler.start()
-
-@app.teardown_appcontext
-def shutdown_scheduler(exception=None):
-    try:
-        scheduler.shutdown(wait=False)
-    except SchedulerNotRunningError:
-        pass
+scheduler.add_job(lambda: print("[Test] scheduler is working", flush=True), trigger='interval', seconds=30)
+print("🚀 Flask app started, scheduler running", flush=True)
 
 # === IoU helper
 def compute_iou(box1, box2):
