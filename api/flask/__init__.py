@@ -5,7 +5,7 @@ import io
 import os
 from update_satellites import update_satellites
 from get_user_satellites import update as update_user_satellites
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers import SchedulerNotRunningError
 import json
 
@@ -20,7 +20,7 @@ CLIENT = InferenceHTTPClient(
 MODEL_ID = "my-first-project-hqotd/1" 
 
 # === Scheduler setup ===
-scheduler = BlockingScheduler()
+scheduler = BackgroundScheduler()
 scheduler.add_job(func=update_satellites, trigger='interval', minutes=2)
 scheduler.start()
 
