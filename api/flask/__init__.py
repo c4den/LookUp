@@ -26,6 +26,13 @@ scheduler.start()
 scheduler.add_job(lambda: print("[Test] scheduler is working", flush=True), trigger='interval', seconds=30)
 print("🚀 Flask app started, scheduler running", flush=True)
 
+@app.teardown_appcontext
+def shutdown_scheduler(exception=None):
+    try:
+        scheduler.shutdown(wait=False)
+    except SchedulerNotRunningError:
+        pass
+
 # === IoU helper
 def compute_iou(box1, box2):
     x1_min, y1_min, x1_max, y1_max = box1
