@@ -21,7 +21,7 @@ MODEL_ID = "my-first-project-hqotd/1"
 
 # === Scheduler setup ===
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=update_satellites, trigger="interval", minutes=5)
+scheduler.add_job(func=update_satellites, trigger="interval", minutes=2)
 scheduler.start()
 
 @app.teardown_appcontext
