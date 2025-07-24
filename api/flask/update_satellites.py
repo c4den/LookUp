@@ -5,6 +5,7 @@ from skyfield.api import wgs84
 from dotenv import load_dotenv, find_dotenv
 import math
 import os
+import time
 
 def is_invalid_point(doc):
     try:
@@ -14,6 +15,7 @@ def is_invalid_point(doc):
         return True
 
 def update_satellites():
+    start = time.time()
     print("[Scheduler] Running satellite update...")
     dotenv_path = find_dotenv()
     load_dotenv(dotenv_path)
@@ -64,4 +66,5 @@ def update_satellites():
 
     if requests:
         collection.bulk_write(requests)
-    print("[Scheduler] Done satellite update...")
+    end = time.time()
+    print(f"[Scheduler] Done satellite update: took {end - start:.4f} seconds to execute")
