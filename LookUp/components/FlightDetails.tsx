@@ -138,12 +138,56 @@ export default function FlightDetails() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1E1E1E', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, justifyContent: "center", marginTop: 48},
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#000' },
-  iconBtn: { padding: 8 },
-  title: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', flex: 1 },
-  content: { padding: 16 },
-  section: { marginBottom: 24 },
-  sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  sectionText: { color: '#ccc', fontSize: 14, marginBottom: 4 },
+  container: 
+  { 
+    flex: 1, 
+    backgroundColor: 'black', 
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, 
+    justifyContent: "center", 
+    marginTop: 48
+  },
+  header: 
+  { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 16, 
+    backgroundColor: '#000' 
+  },
+  iconBtn: 
+  { 
+    padding: 8 
+  },
+  title: 
+  { 
+    color: '#fff', 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    textAlign: 'center', 
+    flex: 1 
+  },
+  content: 
+  { 
+    padding: 16 
+  },
+  section: 
+  { 
+    marginBottom: 24, 
+    backgroundColor: "#2a2a2a",
+    padding: 14,
+    borderRadius: 16,
+  },
+  sectionTitle: 
+  { 
+    color: '#fff', 
+    fontSize: 28, 
+    fontWeight: '600', 
+    marginBottom: 8 
+  },
+  sectionText: 
+  { 
+    color: '#ccc', 
+    fontSize: 16, 
+    marginBottom: 4 
+  },
 });

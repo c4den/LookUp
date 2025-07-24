@@ -25,12 +25,14 @@ export default function FlightCard({
   onToggleFav,
   onPress,
 }: FlightCardProps) {
+  const NA = "Data unavailable";
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.header}>
-        <Text style={styles.ident}>{ident}</Text>
+        <Text style={styles.ident}>{ident || NA}</Text>
         <View style={styles.headerRight}>
-          <Text style={styles.airline}>{airline}</Text>
+          <Text style={styles.airline}>{airline || NA}</Text>
           <TouchableOpacity onPress={onToggleFav} style={styles.starButton}>
             <Ionicons
               name={isFav ? "star" : "star-outline"}
@@ -41,11 +43,13 @@ export default function FlightCard({
         </View>
       </View>
 
-      <Text style={styles.route}>{origin} → {destination}</Text>
+      <Text style={styles.route}>
+        {origin || NA} → {destination || NA}
+      </Text>
 
       <View style={styles.footer}>
         <Text style={styles.arrivalLabel}>Estimated arrival:</Text>
-        <Text style={styles.arrivalTime}>{arrivalTime}</Text>
+        <Text style={styles.arrivalTime}>{arrivalTime || NA}</Text>
         <Ionicons name="chevron-forward" size={20} color="#888" />
       </View>
     </TouchableOpacity>

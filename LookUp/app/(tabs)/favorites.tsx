@@ -50,15 +50,18 @@ export default function FavoritesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Favorites</Text>
+      </View>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
           style={styles.userButton}
           onPress={showLoginModal}
         >
           <Ionicons name="person" size={20} color="white" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
-      <ThemedView style={styles.searchBar}>
+      <ThemedView style={styles.searchBox }>
         <Ionicons name="search" size={20} color="#888" />
         <TextInput
           style={styles.input}
@@ -99,7 +102,19 @@ export default function FavoritesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: 
+  { 
+    flex: 1, 
+    backgroundColor: "#000" 
+  },
+  header: 
+  { 
+    paddingTop: 24,
+    paddingVertical: 12, 
+    alignItems: "center", 
+    backgroundColor: "#000" 
+  },
+  headerTitle: { color: "#fff", fontSize: 20, fontWeight: "600" },
   userButton: {
     position: "absolute",
     top: 40,
@@ -109,15 +124,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
-  searchBar: {
+  searchBox: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#1e1e1e",
     margin: 16,
-    top: 20,
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
   },
   input: { flex: 1, marginLeft: 8, color: "#fff", height: 40 },
   empty: { flex: 1, justifyContent: "center", alignItems: "center" },
